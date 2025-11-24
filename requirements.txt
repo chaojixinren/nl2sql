@@ -1,0 +1,35 @@
+# NL2SQL LangGraph Project Dependencies
+# M0: Base dependencies for minimal runnable system
+
+# Core LangGraph and LangChain
+langgraph>=0.0.20
+langchain>=0.1.0
+langchain-openai>=0.0.5  # 也支持兼容 OpenAI API 的服务 (DeepSeek, Qwen)
+langchain-community>=0.0.20
+
+# Configuration Management
+python-dotenv>=1.0.0
+pyyaml>=6.0
+
+# Database (M2+)
+sqlalchemy>=2.0.0
+# Will add specific DB drivers in M2
+
+# SQL Parsing and Validation (M4+)
+sqlglot>=20.0.0
+
+# Vector Store and Embeddings (M6+)
+faiss-cpu>=1.7.4
+# chromadb>=0.4.0  # Alternative vector store
+
+# Local Embedding Models (M6+, 可选)
+# sentence-transformers>=2.2.0  # 用于本地 embedding (如 BGE 模型)
+# torch>=2.0.0  # sentence-transformers 依赖
+
+# Web Framework (M12+)
+fastapi>=0.110.0
+uvicorn>=0.27.0
+pydantic>=2.0.0
+
+# Utilities
+typing-extensions>=4.9.0

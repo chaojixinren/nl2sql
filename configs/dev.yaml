@@ -1,0 +1,68 @@
+# Development Environment Configuration
+# M0: Base configuration structure
+
+system:
+  name: "nl2sql-langgraph"
+  version: "0.1.0"
+  environment: "development"
+  log_level: "INFO"
+
+# LLM Configuration
+# 支持的提供商: deepseek, qwen, openai
+llm:
+  provider: "deepseek"  # 默认使用 DeepSeek (国内用户推荐)
+  temperature: 0.0
+  max_tokens: 2000
+  timeout: 30
+
+  # DeepSeek 配置
+  deepseek:
+    model: "deepseek-chat"
+    base_url: "https://api.deepseek.com"
+    # API Key 从环境变量读取
+
+  # 通义千问 Qwen 配置
+  qwen:
+    model: "qwen-plus"  # 可选: qwen-turbo, qwen-max, qwen-plus
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    # API Key 从环境变量读取
+
+  # OpenAI 配置 (可选)
+  openai:
+    model: "gpt-4"
+    base_url: "https://api.openai.com/v1"
+    # API Key 从环境变量读取
+
+# Database Configuration (M2+)
+database:
+  type: "sqlite"
+  path: "data/chinook.db"
+  read_only: true
+  max_rows: 1000
+  timeout: 10
+
+# RAG Configuration (M6+)
+rag:
+  enabled: false
+  vector_store: "faiss"
+  top_k: 5
+
+  # Embedding 配置
+  embedding:
+    provider: "local"  # local, openai, qwen
+    model: "BAAI/bge-small-zh-v1.5"  # 本地中文 embedding 模型
+    # 可选: text-embedding-ada-002 (OpenAI)
+    # 可选: text-embedding-v1 (Qwen)
+
+# Graph Configuration
+graph:
+  max_iterations: 10
+  enable_logging: true
+  trace_enabled: true
+
+# Security Configuration (M5+)
+security:
+  enable_sandbox: true
+  allowed_operations: ["SELECT"]
+  max_execution_time: 10
+  max_result_rows: 1000
