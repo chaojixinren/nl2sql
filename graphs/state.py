@@ -36,3 +36,9 @@ class NL2SQLState(TypedDict):
     # SQL Execution (M2)
     execution_result: Optional[Dict[str, Any]]
     executed_at: Optional[str]
+
+    # 用户信息（M7 多轮对话需要）
+    user_id: Optional[str]
+    
+    # 对话历史（M7 需要）
+    dialog_history: Optional[List[Dict]]

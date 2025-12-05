@@ -27,6 +27,31 @@ from graphs.state import NL2SQLState
 from graphs.nodes.generate_sql import generate_sql_node
 from graphs.nodes.execute_sql import execute_sql_node
 
+def log_node(state: NL2SQLState) -> NL2SQLState:
+    """
+    记录查询日志到文件
+    """
+    import json
+    from pathlib import Path
+
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+
+    log_file = log_dir / "query_log.jsonl"
+
+    log_entry = {
+        "session_id": state.get("session_id"),
+        "question": state.get("question"),
+        "intent": state.get("intent"),
+        "timestamp": state.get("timestamp")
+    }
+
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+    print(f"✓ Log written to {log_file}")
+
+    return state
 
 def parse_intent_node(state: NL2SQLState) -> NL2SQLState:
     """
@@ -104,13 +129,15 @@ def build_graph() -> StateGraph:
 
     # Add nodes
     workflow.add_node("parse_intent", parse_intent_node)
+    workflow.add_node("log", log_node)
     workflow.add_node("generate_sql", generate_sql_node)  # M1
     workflow.add_node("execute_sql", execute_sql_node)    # M2: New node
     workflow.add_node("echo", echo_node)
 
     # Define edges
     workflow.set_entry_point("parse_intent")
-    workflow.add_edge("parse_intent", "generate_sql")
+    workflow.add_edge("parse_intent", "log") 
+    workflow.add_edge("log", "generate_sql")
     workflow.add_edge("generate_sql", "execute_sql")  # M2: Route to SQL execution
     workflow.add_edge("execute_sql", "echo")
     workflow.add_edge("echo", END)
