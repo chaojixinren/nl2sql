@@ -13,7 +13,7 @@ class NL2SQLState(TypedDict):
     - normalized_question (M7)
     - schema (M3)
     - rag_evidence (M6)
-    - candidate_sql (M1)
+    - candidate_sql (M1) ✓ Added
     - validation (M4)
     - execution (M2)
     - answer (M9)
@@ -28,3 +28,7 @@ class NL2SQLState(TypedDict):
 
     # Intent parsing (M0 baseline)
     intent: Optional[Dict[str, Any]]
+
+    # SQL Generation (M1)
+    candidate_sql: Optional[str]
+    sql_generated_at: Optional[str]
