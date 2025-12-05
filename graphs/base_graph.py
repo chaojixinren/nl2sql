@@ -55,22 +55,42 @@ def log_node(state: NL2SQLState) -> NL2SQLState:
 
 def parse_intent_node(state: NL2SQLState) -> NL2SQLState:
     """
-    Parse user intent from the question.
-    M0: Simple intent extraction with metadata.
+    增强版意图解析
     """
     question = state.get("question", "")
+    question_lower = question.lower()
 
-    # Simple intent parsing - will be enhanced in future modules
+    # 1. 识别问题类型
+    if any(kw in question_lower for kw in ["统计", "多少", "总计", "count", "sum"]):
+        question_type = "aggregation"
+    elif any(kw in question_lower for kw in ["排名", "top", "前", "最"]):
+        question_type = "ranking"
+    elif any(kw in question_lower for kw in ["查询", "显示", "show", "select"]):
+        question_type = "select"
+    else:
+        question_type = "unknown"
+
+    # 2. 提取数量词
+    import re
+    numbers = re.findall(r'\d+', question)
+    limit = int(numbers[0]) if numbers else None
+
+    # 3. 检测时间范围
+    has_time = any(kw in question_lower
+                   for kw in ["今天", "本月", "本年", "yesterday", "last"])
+
     intent = {
-        "type": "query",
+        "type": question_type,
+        "limit": limit,
+        "has_time_range": has_time,
         "question_length": len(question),
-        "has_keywords": any(kw in question.lower() for kw in ["查询", "多少", "什么", "哪些", "统计", "show", "what", "how many"]),
         "parsed_at": datetime.now().isoformat()
     }
 
-    print(f"\n=== Parse Intent Node ===")
-    print(f"Question: {question}")
-    print(f"Intent: {json.dumps(intent, indent=2, ensure_ascii=False)}")
+    print(f"\n=== Enhanced Intent ===")
+    print(f"Type: {question_type}")
+    print(f"Limit: {limit}")
+    print(f"Has Time Range: {has_time}")
 
     return {
         **state,
