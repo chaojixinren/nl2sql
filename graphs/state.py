@@ -32,3 +32,7 @@ class NL2SQLState(TypedDict):
     # SQL Generation (M1)
     candidate_sql: Optional[str]
     sql_generated_at: Optional[str]
+
+    # SQL Execution (M2)
+    execution_result: Optional[Dict[str, Any]]
+    executed_at: Optional[str]

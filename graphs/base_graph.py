@@ -2,6 +2,7 @@
 Base LangGraph for NL2SQL system.
 M0: Minimal runnable implementation with input/output nodes.
 M1: Added SQL generation using prompt engineering.
+M2: Added SQL execution using function call.
 """
 import sys
 import os
@@ -24,6 +25,7 @@ if sys.platform == 'win32':
 
 from graphs.state import NL2SQLState
 from graphs.nodes.generate_sql import generate_sql_node
+from graphs.nodes.execute_sql import execute_sql_node
 
 
 def parse_intent_node(state: NL2SQLState) -> NL2SQLState:
@@ -57,6 +59,7 @@ def echo_node(state: NL2SQLState) -> NL2SQLState:
     Echo node - prints current state for verification.
     M0: Simple output verification.
     M1: Also shows generated SQL.
+    M2: Also shows execution results.
     """
     print(f"\n=== Echo Node ===")
     print(f"Session ID: {state.get('session_id')}")
@@ -69,6 +72,20 @@ def echo_node(state: NL2SQLState) -> NL2SQLState:
         print(f"\nGenerated SQL:")
         print(f"  {candidate_sql}")
 
+    # M2: Show execution results
+    execution_result = state.get('execution_result')
+    if execution_result:
+        print(f"\nExecution Result:")
+        if execution_result.get('ok'):
+            print(f"  ✓ Success")
+            print(f"  Rows: {execution_result.get('row_count', 0)}")
+            print(f"  Columns: {', '.join(execution_result.get('columns', []))}")
+            # Show first row
+            if execution_result.get('rows'):
+                print(f"  First row: {execution_result['rows'][0]}")
+        else:
+            print(f"  ✗ Failed: {execution_result.get('error')}")
+
     print(f"Timestamp: {state.get('timestamp')}")
     print(f"\n{'='*50}\n")
 
@@ -80,19 +97,22 @@ def build_graph() -> StateGraph:
     Build the base NL2SQL graph.
     M0: Minimal graph with parse_intent -> echo
     M1: Added generate_sql node: parse_intent -> generate_sql -> echo
+    M2: Added execute_sql node: parse_intent -> generate_sql -> execute_sql -> echo
     """
     # Create graph
     workflow = StateGraph(NL2SQLState)
 
     # Add nodes
     workflow.add_node("parse_intent", parse_intent_node)
-    workflow.add_node("generate_sql", generate_sql_node)  # M1: New node
+    workflow.add_node("generate_sql", generate_sql_node)  # M1
+    workflow.add_node("execute_sql", execute_sql_node)    # M2: New node
     workflow.add_node("echo", echo_node)
 
     # Define edges
     workflow.set_entry_point("parse_intent")
-    workflow.add_edge("parse_intent", "generate_sql")  # M1: Route to SQL generation
-    workflow.add_edge("generate_sql", "echo")
+    workflow.add_edge("parse_intent", "generate_sql")
+    workflow.add_edge("generate_sql", "execute_sql")  # M2: Route to SQL execution
+    workflow.add_edge("execute_sql", "echo")
     workflow.add_edge("echo", END)
 
     # Compile graph
@@ -124,13 +144,15 @@ def run_query(question: str, session_id: str = None) -> NL2SQLState:
         "session_id": session_id,
         "timestamp": None,
         "intent": None,
-        "candidate_sql": None,  # M1
-        "sql_generated_at": None  # M1
+        "candidate_sql": None,        # M1
+        "sql_generated_at": None,     # M1
+        "execution_result": None,     # M2
+        "executed_at": None           # M2
     }
 
     # Run graph
     print(f"\n{'='*50}")
-    print(f"Starting NL2SQL Graph (M1 - Prompt Engineering)")
+    print(f"Starting NL2SQL Graph (M2 - Function Call DB)")
     print(f"{'='*50}")
 
     result = graph.invoke(initial_state)
@@ -140,18 +162,18 @@ def run_query(question: str, session_id: str = None) -> NL2SQLState:
 
 if __name__ == "__main__":
     """
-    M1 Acceptance Test:
-    Input a question and verify that SQL is correctly generated.
+    M2 Acceptance Test:
+    Input a question, generate SQL, and execute against database.
     """
-    # Test cases
+    # Test cases - will work with Chinook database
     test_questions = [
-        "查询所有用户的订单数量",
-        "What are the top 10 customers by revenue?",
-        "统计每个月的销售额"
+        "Show all albums",
+        "How many tracks are there?",
+        "What are the top 5 longest tracks?"
     ]
 
     print("\n" + "="*70)
-    print("M1 - NL2SQL with Prompt Engineering Test")
+    print("M2 - NL2SQL with Function Call Test")
     print("="*70)
 
     for i, question in enumerate(test_questions, 1):
@@ -159,7 +181,9 @@ if __name__ == "__main__":
         result = run_query(question)
         print(f"\nFinal State Keys: {list(result.keys())}")
         print(f"SQL Generated: {'✓' if result.get('candidate_sql') else '✗'}")
+        exec_result = result.get('execution_result', {})
+        print(f"SQL Executed: {'✓' if exec_result.get('ok') else '✗'}")
 
     print("\n" + "="*70)
-    print("M1 Test Complete!")
+    print("M2 Test Complete!")
     print("="*70)
