@@ -10,7 +10,7 @@ system:
 # LLM Configuration
 # 支持的提供商: deepseek, qwen, openai
 llm:
-  provider: "deepseek"  # 默认使用 DeepSeek (国内用户推荐)
+  provider: "qwen"  
   temperature: 0.0
   max_tokens: 2000
   timeout: 30
@@ -23,7 +23,7 @@ llm:
 
   # 通义千问 Qwen 配置
   qwen:
-    model: "qwen-plus"  # 可选: qwen-turbo, qwen-max, qwen-plus
+    model: "qwen-max"  # 可选: qwen-turbo, qwen-max, qwen-plus
     base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
     # API Key 从环境变量读取
 
@@ -49,8 +49,8 @@ rag:
 
   # Embedding 配置
   embedding:
-    provider: "local"  # local, openai, qwen
-    model: "BAAI/bge-small-zh-v1.5"  # 本地中文 embedding 模型
+    provider: "qwen"  # local, openai, qwen
+    model: "text-embedding-v4"  # 本地中文 embedding 模型
     # 可选: text-embedding-ada-002 (OpenAI)
     # 可选: text-embedding-v1 (Qwen)
 
