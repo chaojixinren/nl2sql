@@ -138,32 +138,3 @@ class LLMClient:
 llm_client = LLMClient()
 
 
-if __name__ == "__main__":
-    """Test LLM client with different providers"""
-    import sys
-
-    print("=== LLM Client Test ===\n")
-
-    # Test current provider
-    print(f"Current Provider: {llm_client.provider}")
-    print(f"Current Model: {llm_client.model}\n")
-
-    # Test simple chat
-    try:
-        print("Testing simple chat...")
-        response = llm_client.chat(
-            prompt="将这句话翻译成SQL: 查询所有用户",
-            system_message="你是一个SQL专家"
-        )
-        print(f"Response: {response}\n")
-        print("✓ Chat test passed")
-
-    except Exception as e:
-        print(f"✗ Chat test failed: {e}")
-        print("\n提示: 请确保已配置 API Key")
-        print("  1. 复制 .env.example 到 .env")
-        print("  2. 填入你的 API Key (DeepSeek/Qwen/OpenAI)")
-        print("  3. 重新运行测试")
-        sys.exit(1)
-
-    print("\n=== Test Complete ===")
