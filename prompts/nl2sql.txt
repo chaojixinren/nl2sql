@@ -6,6 +6,12 @@
 ## 数据库Schema
 {schema}
 
+## 字段匹配提示
+- 仔细阅读上方的表结构，确保使用**正确的表名和字段名**
+- 字段名区分大小写，请与 Schema 中的完全一致
+- 如果需要关联多表，请参考外键关系
+- 示例值可帮助理解字段的数据格式和取值范围
+
 ## Few-Shot 示例
 
 ### 示例 1: 简单查询
@@ -16,28 +22,28 @@ SELECT * FROM customers;
 ```
 
 ### 示例 2: 条件查询
-问题: 查询来自北京的客户
+问题: 查询来自巴西的客户
 SQL:
 ```sql
-SELECT * FROM customers WHERE city = '北京';
+SELECT * FROM customers WHERE Country = 'Brazil';
 ```
 
 ### 示例 3: 聚合查询
 问题: 统计每个城市的客户数量
 SQL:
 ```sql
-SELECT city, COUNT(*) as customer_count
+SELECT City, COUNT(*) as customer_count
 FROM customers
-GROUP BY city;
+GROUP BY City;
 ```
 
 ### 示例 4: 排序查询
 问题: 查询销售额最高的前10个客户
 SQL:
 ```sql
-SELECT customer_name, SUM(amount) as total_sales
-FROM orders
-GROUP BY customer_name
+SELECT CustomerId, SUM(Total) as total_sales
+FROM invoices
+GROUP BY CustomerId
 ORDER BY total_sales DESC
 LIMIT 10;
 ```
@@ -46,20 +52,21 @@ LIMIT 10;
 问题: 查询每个客户的订单数量
 SQL:
 ```sql
-SELECT c.customer_name, COUNT(o.order_id) as order_count
+SELECT c.FirstName, c.LastName, COUNT(i.InvoiceId) as order_count
 FROM customers c
-LEFT JOIN orders o ON c.customer_id = o.customer_id
-GROUP BY c.customer_name;
+LEFT JOIN invoices i ON c.CustomerId = i.CustomerId
+GROUP BY c.CustomerId;
 ```
 
 ## 要求
 1. **只返回SQL语句**，不要有任何解释或说明
 2. 使用标准SQL语法
-3. 确保列名和表名与Schema完全一致
+3. **确保列名和表名与Schema完全一致**（区分大小写）
 4. 如果需要聚合，使用GROUP BY
 5. 如果需要排序，使用ORDER BY
 6. 如果需要限制数量，使用LIMIT
 7. SQL语句必须以分号结尾
+8. 优先使用具体字段名而非SELECT *
 
 ## 用户问题
 {question}

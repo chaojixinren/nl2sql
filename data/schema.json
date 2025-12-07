@@ -1,0 +1,1622 @@
+{
+  "database_type": "sqlite",
+  "generated_at": "2025-12-07T15:44:31.351546",
+  "tables": [
+    {
+      "name": "Album",
+      "description": "",
+      "columns": [
+        {
+          "name": "AlbumId",
+          "type": "INTEGER",
+          "primary_key": true,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "albumid",
+            "专辑编号",
+            "album_id"
+          ],
+          "sample_values": [
+            1,
+            4,
+            2
+          ]
+        },
+        {
+          "name": "Title",
+          "type": "NVARCHAR(160)",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "title",
+            "职位"
+          ],
+          "sample_values": [
+            "For Those About To Rock We Salute You",
+            "Balls to the Wall",
+            "Restless and Wild"
+          ]
+        },
+        {
+          "name": "ArtistId",
+          "type": "INTEGER",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "artist_id",
+            "artistid",
+            "艺术家编号"
+          ],
+          "sample_values": [
+            1,
+            2,
+            3
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "ArtistId",
+          "references_table": "Artist",
+          "references_column": "ArtistId"
+        }
+      ],
+      "row_count": 347
+    },
+    {
+      "name": "Artist",
+      "description": "",
+      "columns": [
+        {
+          "name": "ArtistId",
+          "type": "INTEGER",
+          "primary_key": true,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "artist_id",
+            "artistid",
+            "艺术家编号"
+          ],
+          "sample_values": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "NVARCHAR(120)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "name",
+            "名称"
+          ],
+          "sample_values": [
+            "AC/DC",
+            "Accept",
+            "Aerosmith"
+          ]
+        }
+      ],
+      "foreign_keys": [],
+      "row_count": 275
+    },
+    {
+      "name": "Customer",
+      "description": "",
+      "columns": [
+        {
+          "name": "CustomerId",
+          "type": "INTEGER",
+          "primary_key": true,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "customerid",
+            "客户编号",
+            "customer_id"
+          ],
+          "sample_values": [
+            1,
+            3,
+            12
+          ]
+        },
+        {
+          "name": "FirstName",
+          "type": "NVARCHAR(40)",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "first_name",
+            "firstname",
+            "名名称"
+          ],
+          "sample_values": [
+            "Luís",
+            "Leonie",
+            "François"
+          ]
+        },
+        {
+          "name": "LastName",
+          "type": "NVARCHAR(20)",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "姓名称",
+            "last_name",
+            "lastname"
+          ],
+          "sample_values": [
+            "Gonçalves",
+            "Köhler",
+            "Tremblay"
+          ]
+        },
+        {
+          "name": "Company",
+          "type": "NVARCHAR(80)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "company",
+            "公司"
+          ],
+          "sample_values": [
+            "Embraer - Empresa Brasileira de Aeronáutica S.A.",
+            "JetBrains s.r.o.",
+            "Woodstock Discos"
+          ]
+        },
+        {
+          "name": "Address",
+          "type": "NVARCHAR(70)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "address",
+            "地址"
+          ],
+          "sample_values": [
+            "Av. Brigadeiro Faria Lima, 2170",
+            "Theodor-Heuss-Straße 34",
+            "1498 rue Bélanger"
+          ]
+        },
+        {
+          "name": "City",
+          "type": "NVARCHAR(40)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "城市",
+            "city"
+          ],
+          "sample_values": [
+            "São José dos Campos",
+            "Stuttgart",
+            "Montréal"
+          ]
+        },
+        {
+          "name": "State",
+          "type": "NVARCHAR(40)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "州",
+            "state"
+          ],
+          "sample_values": [
+            "SP",
+            "QC",
+            "RJ"
+          ]
+        },
+        {
+          "name": "Country",
+          "type": "NVARCHAR(40)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "country",
+            "国家"
+          ],
+          "sample_values": [
+            "Brazil",
+            "Germany",
+            "Canada"
+          ]
+        },
+        {
+          "name": "PostalCode",
+          "type": "NVARCHAR(10)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "postal_code",
+            "邮编代码",
+            "postalcode"
+          ],
+          "sample_values": [
+            "12227-000",
+            "70174",
+            "H2G 1A7"
+          ]
+        },
+        {
+          "name": "Phone",
+          "type": "NVARCHAR(24)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "phone",
+            "电话"
+          ],
+          "sample_values": [
+            "+55 (12) 3923-5555",
+            "+49 0711 2842222",
+            "+1 (514) 721-4711"
+          ]
+        },
+        {
+          "name": "Fax",
+          "type": "NVARCHAR(24)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "传真",
+            "fax"
+          ],
+          "sample_values": [
+            "+55 (12) 3923-5566",
+            "+420 2 4172 5555",
+            "+55 (11) 3033-4564"
+          ]
+        },
+        {
+          "name": "Email",
+          "type": "NVARCHAR(60)",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "邮箱",
+            "email"
+          ],
+          "sample_values": [
+            "luisg@embraer.com.br",
+            "leonekohler@surfeu.de",
+            "ftremblay@gmail.com"
+          ]
+        },
+        {
+          "name": "SupportRepId",
+          "type": "INTEGER",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "supportrepid",
+            "客服代表编号",
+            "support_rep_id"
+          ],
+          "sample_values": [
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "SupportRepId",
+          "references_table": "Employee",
+          "references_column": "EmployeeId"
+        }
+      ],
+      "row_count": 59
+    },
+    {
+      "name": "Employee",
+      "description": "",
+      "columns": [
+        {
+          "name": "EmployeeId",
+          "type": "INTEGER",
+          "primary_key": true,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "employee_id",
+            "employeeid",
+            "员工编号"
+          ],
+          "sample_values": [
+            1,
+            2,
+            6
+          ]
+        },
+        {
+          "name": "LastName",
+          "type": "NVARCHAR(20)",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "姓名称",
+            "last_name",
+            "lastname"
+          ],
+          "sample_values": [
+            "Adams",
+            "Edwards",
+            "Peacock"
+          ]
+        },
+        {
+          "name": "FirstName",
+          "type": "NVARCHAR(20)",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "first_name",
+            "firstname",
+            "名名称"
+          ],
+          "sample_values": [
+            "Andrew",
+            "Nancy",
+            "Jane"
+          ]
+        },
+        {
+          "name": "Title",
+          "type": "NVARCHAR(30)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "title",
+            "职位"
+          ],
+          "sample_values": [
+            "General Manager",
+            "Sales Manager",
+            "Sales Support Agent"
+          ]
+        },
+        {
+          "name": "ReportsTo",
+          "type": "INTEGER",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "reports_to",
+            "reportsto",
+            "汇报to"
+          ],
+          "sample_values": [
+            1,
+            2,
+            6
+          ]
+        },
+        {
+          "name": "BirthDate",
+          "type": "DATETIME",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "birthdate",
+            "birth_date",
+            "生日日期"
+          ],
+          "sample_values": [
+            "1962-02-18 00:00:00",
+            "1958-12-08 00:00:00",
+            "1973-08-29 00:00:00"
+          ]
+        },
+        {
+          "name": "HireDate",
+          "type": "DATETIME",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "入职日期",
+            "hiredate",
+            "hire_date"
+          ],
+          "sample_values": [
+            "2002-08-14 00:00:00",
+            "2002-05-01 00:00:00",
+            "2002-04-01 00:00:00"
+          ]
+        },
+        {
+          "name": "Address",
+          "type": "NVARCHAR(70)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "address",
+            "地址"
+          ],
+          "sample_values": [
+            "11120 Jasper Ave NW",
+            "825 8 Ave SW",
+            "1111 6 Ave SW"
+          ]
+        },
+        {
+          "name": "City",
+          "type": "NVARCHAR(40)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "城市",
+            "city"
+          ],
+          "sample_values": [
+            "Edmonton",
+            "Calgary",
+            "Lethbridge"
+          ]
+        },
+        {
+          "name": "State",
+          "type": "NVARCHAR(40)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "州",
+            "state"
+          ],
+          "sample_values": [
+            "AB"
+          ]
+        },
+        {
+          "name": "Country",
+          "type": "NVARCHAR(40)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "country",
+            "国家"
+          ],
+          "sample_values": [
+            "Canada"
+          ]
+        },
+        {
+          "name": "PostalCode",
+          "type": "NVARCHAR(10)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "postal_code",
+            "邮编代码",
+            "postalcode"
+          ],
+          "sample_values": [
+            "T5K 2N1",
+            "T2P 2T3",
+            "T2P 5M5"
+          ]
+        },
+        {
+          "name": "Phone",
+          "type": "NVARCHAR(24)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "phone",
+            "电话"
+          ],
+          "sample_values": [
+            "+1 (780) 428-9482",
+            "+1 (403) 262-3443",
+            "+1 (403) 263-4423"
+          ]
+        },
+        {
+          "name": "Fax",
+          "type": "NVARCHAR(24)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "传真",
+            "fax"
+          ],
+          "sample_values": [
+            "+1 (780) 428-3457",
+            "+1 (403) 262-3322",
+            "+1 (403) 262-6712"
+          ]
+        },
+        {
+          "name": "Email",
+          "type": "NVARCHAR(60)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "邮箱",
+            "email"
+          ],
+          "sample_values": [
+            "andrew@chinookcorp.com",
+            "nancy@chinookcorp.com",
+            "jane@chinookcorp.com"
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "ReportsTo",
+          "references_table": "Employee",
+          "references_column": "EmployeeId"
+        }
+      ],
+      "row_count": 8
+    },
+    {
+      "name": "Genre",
+      "description": "",
+      "columns": [
+        {
+          "name": "GenreId",
+          "type": "INTEGER",
+          "primary_key": true,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "genreid",
+            "genre_id",
+            "流派编号"
+          ],
+          "sample_values": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "NVARCHAR(120)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "name",
+            "名称"
+          ],
+          "sample_values": [
+            "Rock",
+            "Jazz",
+            "Metal"
+          ]
+        }
+      ],
+      "foreign_keys": [],
+      "row_count": 25
+    },
+    {
+      "name": "Invoice",
+      "description": "",
+      "columns": [
+        {
+          "name": "InvoiceId",
+          "type": "INTEGER",
+          "primary_key": true,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "发票编号",
+            "invoice_id",
+            "invoiceid"
+          ],
+          "sample_values": [
+            98,
+            121,
+            143
+          ]
+        },
+        {
+          "name": "CustomerId",
+          "type": "INTEGER",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "customerid",
+            "客户编号",
+            "customer_id"
+          ],
+          "sample_values": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "name": "InvoiceDate",
+          "type": "DATETIME",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "发票日期",
+            "invoice_date",
+            "invoicedate"
+          ],
+          "sample_values": [
+            "2021-01-01 00:00:00",
+            "2021-01-02 00:00:00",
+            "2021-01-03 00:00:00"
+          ]
+        },
+        {
+          "name": "BillingAddress",
+          "type": "NVARCHAR(70)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "账单地址",
+            "billingaddress",
+            "billing_address"
+          ],
+          "sample_values": [
+            "Theodor-Heuss-Straße 34",
+            "Ullevålsveien 14",
+            "Grétrystraat 63"
+          ]
+        },
+        {
+          "name": "BillingCity",
+          "type": "NVARCHAR(40)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "账单城市",
+            "billing_city",
+            "billingcity"
+          ],
+          "sample_values": [
+            "Stuttgart",
+            "Oslo",
+            "Brussels"
+          ]
+        },
+        {
+          "name": "BillingState",
+          "type": "NVARCHAR(40)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "billing_state",
+            "billingstate",
+            "账单州"
+          ],
+          "sample_values": [
+            "AB",
+            "MA",
+            "Dublin"
+          ]
+        },
+        {
+          "name": "BillingCountry",
+          "type": "NVARCHAR(40)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "billing_country",
+            "billingcountry",
+            "账单国家"
+          ],
+          "sample_values": [
+            "Germany",
+            "Norway",
+            "Belgium"
+          ]
+        },
+        {
+          "name": "BillingPostalCode",
+          "type": "NVARCHAR(10)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "billing_postal_code",
+            "billingpostalcode",
+            "账单邮编代码"
+          ],
+          "sample_values": [
+            "70174",
+            "0171",
+            "1000"
+          ]
+        },
+        {
+          "name": "Total",
+          "type": "NUMERIC(10,2)",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "total",
+            "总计"
+          ],
+          "sample_values": [
+            1.98,
+            3.96,
+            5.94
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "CustomerId",
+          "references_table": "Customer",
+          "references_column": "CustomerId"
+        }
+      ],
+      "row_count": 412
+    },
+    {
+      "name": "InvoiceLine",
+      "description": "",
+      "columns": [
+        {
+          "name": "InvoiceLineId",
+          "type": "INTEGER",
+          "primary_key": true,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "invoicelineid",
+            "invoice_line_id",
+            "发票line编号"
+          ],
+          "sample_values": [
+            579,
+            1,
+            1154
+          ]
+        },
+        {
+          "name": "InvoiceId",
+          "type": "INTEGER",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "发票编号",
+            "invoice_id",
+            "invoiceid"
+          ],
+          "sample_values": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "name": "TrackId",
+          "type": "INTEGER",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "track_id",
+            "trackid",
+            "曲目编号"
+          ],
+          "sample_values": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "name": "UnitPrice",
+          "type": "NUMERIC(10,2)",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "单位价格",
+            "unitprice",
+            "unit_price"
+          ],
+          "sample_values": [
+            0.99,
+            1.99
+          ]
+        },
+        {
+          "name": "Quantity",
+          "type": "INTEGER",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "quantity",
+            "数量"
+          ],
+          "sample_values": [
+            1
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "TrackId",
+          "references_table": "Track",
+          "references_column": "TrackId"
+        },
+        {
+          "column": "InvoiceId",
+          "references_table": "Invoice",
+          "references_column": "InvoiceId"
+        }
+      ],
+      "row_count": 2240
+    },
+    {
+      "name": "MediaType",
+      "description": "",
+      "columns": [
+        {
+          "name": "MediaTypeId",
+          "type": "INTEGER",
+          "primary_key": true,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "mediatypeid",
+            "媒体类型编号",
+            "media_type_id"
+          ],
+          "sample_values": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "NVARCHAR(120)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "name",
+            "名称"
+          ],
+          "sample_values": [
+            "MPEG audio file",
+            "Protected AAC audio file",
+            "Protected MPEG-4 video file"
+          ]
+        }
+      ],
+      "foreign_keys": [],
+      "row_count": 5
+    },
+    {
+      "name": "Playlist",
+      "description": "",
+      "columns": [
+        {
+          "name": "PlaylistId",
+          "type": "INTEGER",
+          "primary_key": true,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "playlist_id",
+            "playlistid",
+            "播放列表编号"
+          ],
+          "sample_values": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "NVARCHAR(120)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "name",
+            "名称"
+          ],
+          "sample_values": [
+            "Music",
+            "Movies",
+            "TV Shows"
+          ]
+        }
+      ],
+      "foreign_keys": [],
+      "row_count": 18
+    },
+    {
+      "name": "PlaylistTrack",
+      "description": "",
+      "columns": [
+        {
+          "name": "PlaylistId",
+          "type": "INTEGER",
+          "primary_key": true,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "playlist_id",
+            "playlistid",
+            "播放列表编号"
+          ],
+          "sample_values": [
+            1,
+            3,
+            5
+          ]
+        },
+        {
+          "name": "TrackId",
+          "type": "INTEGER",
+          "primary_key": true,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "track_id",
+            "trackid",
+            "曲目编号"
+          ],
+          "sample_values": [
+            1,
+            2,
+            3
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "TrackId",
+          "references_table": "Track",
+          "references_column": "TrackId"
+        },
+        {
+          "column": "PlaylistId",
+          "references_table": "Playlist",
+          "references_column": "PlaylistId"
+        }
+      ],
+      "row_count": 8715
+    },
+    {
+      "name": "Track",
+      "description": "",
+      "columns": [
+        {
+          "name": "TrackId",
+          "type": "INTEGER",
+          "primary_key": true,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "track_id",
+            "trackid",
+            "曲目编号"
+          ],
+          "sample_values": [
+            1,
+            6,
+            7
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "NVARCHAR(200)",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "name",
+            "名称"
+          ],
+          "sample_values": [
+            "For Those About To Rock (We Salute You)",
+            "Balls to the Wall",
+            "Fast As a Shark"
+          ]
+        },
+        {
+          "name": "AlbumId",
+          "type": "INTEGER",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "albumid",
+            "专辑编号",
+            "album_id"
+          ],
+          "sample_values": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "name": "MediaTypeId",
+          "type": "INTEGER",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "mediatypeid",
+            "媒体类型编号",
+            "media_type_id"
+          ],
+          "sample_values": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "name": "GenreId",
+          "type": "INTEGER",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "genreid",
+            "genre_id",
+            "流派编号"
+          ],
+          "sample_values": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "name": "Composer",
+          "type": "NVARCHAR(220)",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "作曲",
+            "composer"
+          ],
+          "sample_values": [
+            "Angus Young, Malcolm Young, Brian Johnson",
+            "U. Dirkschneider, W. Hoffmann, H. Frank, P. Baltes, S. Kaufmann, G. Hoffmann",
+            "F. Baltes, S. Kaufman, U. Dirkscneider & W. Hoffman"
+          ]
+        },
+        {
+          "name": "Milliseconds",
+          "type": "INTEGER",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "milliseconds",
+            "毫秒"
+          ],
+          "sample_values": [
+            343719,
+            342562,
+            230619
+          ]
+        },
+        {
+          "name": "Bytes",
+          "type": "INTEGER",
+          "primary_key": false,
+          "not_null": false,
+          "description": "",
+          "aliases": [
+            "bytes",
+            "字节"
+          ],
+          "sample_values": [
+            11170334,
+            5510424,
+            3990994
+          ]
+        },
+        {
+          "name": "UnitPrice",
+          "type": "NUMERIC(10,2)",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "单位价格",
+            "unitprice",
+            "unit_price"
+          ],
+          "sample_values": [
+            0.99,
+            1.99
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "MediaTypeId",
+          "references_table": "MediaType",
+          "references_column": "MediaTypeId"
+        },
+        {
+          "column": "GenreId",
+          "references_table": "Genre",
+          "references_column": "GenreId"
+        },
+        {
+          "column": "AlbumId",
+          "references_table": "Album",
+          "references_column": "AlbumId"
+        }
+      ],
+      "row_count": 3503
+    }
+  ],
+  "table_list": [
+    "Album",
+    "Artist",
+    "Customer",
+    "Employee",
+    "Genre",
+    "Invoice",
+    "InvoiceLine",
+    "MediaType",
+    "Playlist",
+    "PlaylistTrack",
+    "Track"
+  ],
+  "field_index": {
+    "albumid": [
+      {
+        "table": "Album",
+        "column": "AlbumId",
+        "type": "INTEGER"
+      },
+      {
+        "table": "Track",
+        "column": "AlbumId",
+        "type": "INTEGER"
+      }
+    ],
+    "title": [
+      {
+        "table": "Album",
+        "column": "Title",
+        "type": "NVARCHAR(160)"
+      },
+      {
+        "table": "Employee",
+        "column": "Title",
+        "type": "NVARCHAR(30)"
+      }
+    ],
+    "artistid": [
+      {
+        "table": "Album",
+        "column": "ArtistId",
+        "type": "INTEGER"
+      },
+      {
+        "table": "Artist",
+        "column": "ArtistId",
+        "type": "INTEGER"
+      }
+    ],
+    "name": [
+      {
+        "table": "Artist",
+        "column": "Name",
+        "type": "NVARCHAR(120)"
+      },
+      {
+        "table": "Genre",
+        "column": "Name",
+        "type": "NVARCHAR(120)"
+      },
+      {
+        "table": "MediaType",
+        "column": "Name",
+        "type": "NVARCHAR(120)"
+      },
+      {
+        "table": "Playlist",
+        "column": "Name",
+        "type": "NVARCHAR(120)"
+      },
+      {
+        "table": "Track",
+        "column": "Name",
+        "type": "NVARCHAR(200)"
+      }
+    ],
+    "customerid": [
+      {
+        "table": "Customer",
+        "column": "CustomerId",
+        "type": "INTEGER"
+      },
+      {
+        "table": "Invoice",
+        "column": "CustomerId",
+        "type": "INTEGER"
+      }
+    ],
+    "firstname": [
+      {
+        "table": "Customer",
+        "column": "FirstName",
+        "type": "NVARCHAR(40)"
+      },
+      {
+        "table": "Employee",
+        "column": "FirstName",
+        "type": "NVARCHAR(20)"
+      }
+    ],
+    "lastname": [
+      {
+        "table": "Customer",
+        "column": "LastName",
+        "type": "NVARCHAR(20)"
+      },
+      {
+        "table": "Employee",
+        "column": "LastName",
+        "type": "NVARCHAR(20)"
+      }
+    ],
+    "company": [
+      {
+        "table": "Customer",
+        "column": "Company",
+        "type": "NVARCHAR(80)"
+      }
+    ],
+    "address": [
+      {
+        "table": "Customer",
+        "column": "Address",
+        "type": "NVARCHAR(70)"
+      },
+      {
+        "table": "Employee",
+        "column": "Address",
+        "type": "NVARCHAR(70)"
+      }
+    ],
+    "city": [
+      {
+        "table": "Customer",
+        "column": "City",
+        "type": "NVARCHAR(40)"
+      },
+      {
+        "table": "Employee",
+        "column": "City",
+        "type": "NVARCHAR(40)"
+      }
+    ],
+    "state": [
+      {
+        "table": "Customer",
+        "column": "State",
+        "type": "NVARCHAR(40)"
+      },
+      {
+        "table": "Employee",
+        "column": "State",
+        "type": "NVARCHAR(40)"
+      }
+    ],
+    "country": [
+      {
+        "table": "Customer",
+        "column": "Country",
+        "type": "NVARCHAR(40)"
+      },
+      {
+        "table": "Employee",
+        "column": "Country",
+        "type": "NVARCHAR(40)"
+      }
+    ],
+    "postalcode": [
+      {
+        "table": "Customer",
+        "column": "PostalCode",
+        "type": "NVARCHAR(10)"
+      },
+      {
+        "table": "Employee",
+        "column": "PostalCode",
+        "type": "NVARCHAR(10)"
+      }
+    ],
+    "phone": [
+      {
+        "table": "Customer",
+        "column": "Phone",
+        "type": "NVARCHAR(24)"
+      },
+      {
+        "table": "Employee",
+        "column": "Phone",
+        "type": "NVARCHAR(24)"
+      }
+    ],
+    "fax": [
+      {
+        "table": "Customer",
+        "column": "Fax",
+        "type": "NVARCHAR(24)"
+      },
+      {
+        "table": "Employee",
+        "column": "Fax",
+        "type": "NVARCHAR(24)"
+      }
+    ],
+    "email": [
+      {
+        "table": "Customer",
+        "column": "Email",
+        "type": "NVARCHAR(60)"
+      },
+      {
+        "table": "Employee",
+        "column": "Email",
+        "type": "NVARCHAR(60)"
+      }
+    ],
+    "supportrepid": [
+      {
+        "table": "Customer",
+        "column": "SupportRepId",
+        "type": "INTEGER"
+      }
+    ],
+    "employeeid": [
+      {
+        "table": "Employee",
+        "column": "EmployeeId",
+        "type": "INTEGER"
+      }
+    ],
+    "reportsto": [
+      {
+        "table": "Employee",
+        "column": "ReportsTo",
+        "type": "INTEGER"
+      }
+    ],
+    "birthdate": [
+      {
+        "table": "Employee",
+        "column": "BirthDate",
+        "type": "DATETIME"
+      }
+    ],
+    "hiredate": [
+      {
+        "table": "Employee",
+        "column": "HireDate",
+        "type": "DATETIME"
+      }
+    ],
+    "genreid": [
+      {
+        "table": "Genre",
+        "column": "GenreId",
+        "type": "INTEGER"
+      },
+      {
+        "table": "Track",
+        "column": "GenreId",
+        "type": "INTEGER"
+      }
+    ],
+    "invoiceid": [
+      {
+        "table": "Invoice",
+        "column": "InvoiceId",
+        "type": "INTEGER"
+      },
+      {
+        "table": "InvoiceLine",
+        "column": "InvoiceId",
+        "type": "INTEGER"
+      }
+    ],
+    "invoicedate": [
+      {
+        "table": "Invoice",
+        "column": "InvoiceDate",
+        "type": "DATETIME"
+      }
+    ],
+    "billingaddress": [
+      {
+        "table": "Invoice",
+        "column": "BillingAddress",
+        "type": "NVARCHAR(70)"
+      }
+    ],
+    "billingcity": [
+      {
+        "table": "Invoice",
+        "column": "BillingCity",
+        "type": "NVARCHAR(40)"
+      }
+    ],
+    "billingstate": [
+      {
+        "table": "Invoice",
+        "column": "BillingState",
+        "type": "NVARCHAR(40)"
+      }
+    ],
+    "billingcountry": [
+      {
+        "table": "Invoice",
+        "column": "BillingCountry",
+        "type": "NVARCHAR(40)"
+      }
+    ],
+    "billingpostalcode": [
+      {
+        "table": "Invoice",
+        "column": "BillingPostalCode",
+        "type": "NVARCHAR(10)"
+      }
+    ],
+    "total": [
+      {
+        "table": "Invoice",
+        "column": "Total",
+        "type": "NUMERIC(10,2)"
+      }
+    ],
+    "invoicelineid": [
+      {
+        "table": "InvoiceLine",
+        "column": "InvoiceLineId",
+        "type": "INTEGER"
+      }
+    ],
+    "trackid": [
+      {
+        "table": "InvoiceLine",
+        "column": "TrackId",
+        "type": "INTEGER"
+      },
+      {
+        "table": "PlaylistTrack",
+        "column": "TrackId",
+        "type": "INTEGER"
+      },
+      {
+        "table": "Track",
+        "column": "TrackId",
+        "type": "INTEGER"
+      }
+    ],
+    "unitprice": [
+      {
+        "table": "InvoiceLine",
+        "column": "UnitPrice",
+        "type": "NUMERIC(10,2)"
+      },
+      {
+        "table": "Track",
+        "column": "UnitPrice",
+        "type": "NUMERIC(10,2)"
+      }
+    ],
+    "quantity": [
+      {
+        "table": "InvoiceLine",
+        "column": "Quantity",
+        "type": "INTEGER"
+      }
+    ],
+    "mediatypeid": [
+      {
+        "table": "MediaType",
+        "column": "MediaTypeId",
+        "type": "INTEGER"
+      },
+      {
+        "table": "Track",
+        "column": "MediaTypeId",
+        "type": "INTEGER"
+      }
+    ],
+    "playlistid": [
+      {
+        "table": "Playlist",
+        "column": "PlaylistId",
+        "type": "INTEGER"
+      },
+      {
+        "table": "PlaylistTrack",
+        "column": "PlaylistId",
+        "type": "INTEGER"
+      }
+    ],
+    "composer": [
+      {
+        "table": "Track",
+        "column": "Composer",
+        "type": "NVARCHAR(220)"
+      }
+    ],
+    "milliseconds": [
+      {
+        "table": "Track",
+        "column": "Milliseconds",
+        "type": "INTEGER"
+      }
+    ],
+    "bytes": [
+      {
+        "table": "Track",
+        "column": "Bytes",
+        "type": "INTEGER"
+      }
+    ]
+  }
+}

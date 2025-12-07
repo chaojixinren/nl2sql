@@ -1,6 +1,7 @@
 """
 SQL Generation Node for NL2SQL system.
 M1: Uses prompt engineering to generate SQL from natural language.
+M3: Enhanced with smart schema matching.
 """
 import sys
 from pathlib import Path
@@ -13,7 +14,7 @@ sys.path.insert(0, str(project_root))
 
 from graphs.state import NL2SQLState
 from tools.llm_client import llm_client
-from tools.db import db_client  
+from tools.schema_manager import schema_manager  # M3: 新增 Schema Manager
 from graphs.utils.performance import monitor_performance
 
 
@@ -72,38 +73,45 @@ def extract_sql_from_response(response: str) -> str:
     return sql
 
 
-def get_database_schema() -> str:
-    """从数据库动态获取真实 schema"""
-    schemas = db_client.get_all_schemas()
+def get_database_schema(question: str = "") -> str:
+    """
+    获取数据库 schema，支持智能匹配 (M3)
     
-    schema_text = "数据库类型: SQLite\n"
-    schema_text += "数据库表结构:\n"
-    
-    for table in schemas:
-        columns = ", ".join([
-            f"{col['name']} ({col['type']}{'  PK' if col['primary_key'] else ''})"
-            for col in table['columns']
-        ])
-        schema_text += f"- {table['table_name']} ({columns})\n"
-    
-    return schema_text
+    Args:
+        question: 用户问题（用于智能匹配相关表）
+        
+    Returns:
+        格式化的 schema 文本
+    """
+    if question:
+        # 智能模式：根据问题返回相关的 schema
+        return schema_manager.get_smart_schema_for_question(question)
+    else:
+        # 完整模式：返回所有 schema
+        return schema_manager.format_schema_for_prompt()
 
 
 @monitor_performance
 def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
     """
     Generate SQL from natural language question using LLM.
+    M3: Now uses smart schema matching based on question.
     """
     question = state.get("question", "")
 
-    print(f"\n=== Generate SQL Node ===")
+    print(f"\n=== Generate SQL Node (M3) ===")
     print(f"Question: {question}")
 
     # Load prompt template
     prompt_template = load_prompt_template("nl2sql")
 
-    # 使用真实的数据库 schema（替换原来的占位符）
-    real_schema = get_database_schema()
+    # M3: 使用智能 schema（根据问题匹配相关表）
+    real_schema = get_database_schema(question)
+    
+    # 打印匹配到的表信息
+    relevant_tables = schema_manager.find_relevant_tables(question)
+    if relevant_tables:
+        print(f"Relevant tables: {', '.join(relevant_tables)}")
 
     # Fill in the prompt template
     prompt = prompt_template.format(
