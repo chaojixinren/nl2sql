@@ -1,12 +1,14 @@
 """
 Database tools for NL2SQL system.
 M2: Implements function call-based database query execution.
+Supports MySQL only.
 """
 import sys
-import sqlite3
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 import traceback
+
+import pymysql
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -17,32 +19,25 @@ from configs.config import config
 
 class DatabaseClient:
     """
-    Unified database client supporting multiple database types.
-
-    M2: Currently supports SQLite.
-    Future: Will support MySQL, PostgreSQL, etc.
+    MySQL database client for NL2SQL system.
     """
 
-    def __init__(self, db_path: Optional[str] = None):
-        """
-        Initialize database client.
+    def __init__(self):
+        """Initialize MySQL database client."""
+        self.db_type = "mysql"
+        self.mysql_config = {
+            "host": config.get("mysql_host", "localhost"),
+            "port": config.get("mysql_port", 3306),
+            "user": config.get("mysql_user", "root"),
+            "password": config.get("mysql_password", ""),
+            "database": config.get("mysql_database", "chinook"),
+            "charset": "utf8mb4"
+        }
+        print(f"✓ Database configured (MySQL): {self.mysql_config['host']}:{self.mysql_config['port']}/{self.mysql_config['database']}")
 
-        Args:
-            db_path: Path to database file. If None, reads from config.
-        """
-        self.db_type = config.get("db_type", "sqlite")
-        self.db_path = db_path or config.get("db_path", "data/chinook.db")
-
-        # Resolve relative path
-        if not Path(self.db_path).is_absolute():
-            self.db_path = str(project_root / self.db_path)
-
-        # Check if database exists
-        if not Path(self.db_path).exists():
-            print(f"⚠️  Warning: Database file not found: {self.db_path}")
-            print(f"   Please ensure the database file exists.")
-        else:
-            print(f"✓ Database connected: {self.db_path}")
+    def _get_connection(self):
+        """获取 MySQL 数据库连接"""
+        return pymysql.connect(**self.mysql_config, cursorclass=pymysql.cursors.DictCursor)
 
     def query(
         self,
@@ -74,48 +69,33 @@ class DatabaseClient:
             "error": None
         }
 
-        # Validate SQL
         if not sql or not sql.strip():
             result["error"] = "Empty SQL query"
             return result
 
-        # Security check: only allow SELECT queries in M2
         sql_upper = sql.strip().upper()
         if not sql_upper.startswith("SELECT"):
             result["error"] = "Only SELECT queries are allowed (read-only mode)"
             return result
 
         try:
-            # Connect to database
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row  # Enable column name access
+            conn = self._get_connection()
             cursor = conn.cursor()
 
-            # Execute query
             if params:
                 cursor.execute(sql, params)
             else:
                 cursor.execute(sql)
 
-            # Fetch results with limit
             raw_rows = cursor.fetchmany(fetch_limit)
 
-            # Get column names
-            columns = [desc[0] for desc in cursor.description] if cursor.description else []
+            # MySQL with DictCursor returns dict rows directly
+            columns = list(raw_rows[0].keys()) if raw_rows else []
+            rows = list(raw_rows)
 
-            # Convert rows to list of dicts
-            rows = []
-            for row in raw_rows:
-                row_dict = {}
-                for idx, col_name in enumerate(columns):
-                    row_dict[col_name] = row[idx]
-                rows.append(row_dict)
-
-            # Close connection
             cursor.close()
             conn.close()
 
-            # Success
             result["ok"] = True
             result["rows"] = rows
             result["columns"] = columns
@@ -123,7 +103,7 @@ class DatabaseClient:
 
             return result
 
-        except sqlite3.Error as e:
+        except pymysql.Error as e:
             result["error"] = f"Database error: {str(e)}"
             return result
 
@@ -132,24 +112,13 @@ class DatabaseClient:
             return result
 
     def get_table_names(self) -> List[str]:
-        """
-        Get all table names in the database.
-
-        Returns:
-            List of table names
-        """
+        """Get all table names in the database."""
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = self._get_connection()
             cursor = conn.cursor()
 
-            # SQLite query to get table names
-            cursor.execute("""
-                SELECT name FROM sqlite_master
-                WHERE type='table'
-                ORDER BY name
-            """)
-
-            tables = [row[0] for row in cursor.fetchall()]
+            cursor.execute("SHOW TABLES")
+            tables = [list(row.values())[0] for row in cursor.fetchall()]
 
             cursor.close()
             conn.close()
@@ -161,31 +130,21 @@ class DatabaseClient:
             return []
 
     def get_table_schema(self, table_name: str) -> Dict[str, Any]:
-        """
-        Get schema information for a specific table.
-
-        Args:
-            table_name: Name of the table
-
-        Returns:
-            Dictionary with table schema info
-        """
+        """Get schema information for a specific table."""
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = self._get_connection()
             cursor = conn.cursor()
 
-            # Get column info
-            cursor.execute(f"PRAGMA table_info({table_name})")
+            cursor.execute(f"DESCRIBE `{table_name}`")
             columns = cursor.fetchall()
-
             schema = {
                 "table_name": table_name,
                 "columns": [
                     {
-                        "name": col[1],
-                        "type": col[2],
-                        "not_null": bool(col[3]),
-                        "primary_key": bool(col[5])
+                        "name": col["Field"],
+                        "type": col["Type"],
+                        "not_null": col["Null"] == "NO",
+                        "primary_key": col["Key"] == "PRI"
                     }
                     for col in columns
                 ]
@@ -201,24 +160,14 @@ class DatabaseClient:
             return {"table_name": table_name, "columns": []}
 
     def get_all_schemas(self) -> List[Dict[str, Any]]:
-        """
-        Get schema information for all tables.
-
-        Returns:
-            List of table schema dictionaries
-        """
+        """Get schema information for all tables."""
         tables = self.get_table_names()
         return [self.get_table_schema(table) for table in tables]
 
     def test_connection(self) -> bool:
-        """
-        Test database connection.
-
-        Returns:
-            True if connection successful, False otherwise
-        """
+        """Test database connection."""
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = self._get_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT 1")
             cursor.close()
@@ -231,4 +180,3 @@ class DatabaseClient:
 
 # Global database client instance
 db_client = DatabaseClient()
-

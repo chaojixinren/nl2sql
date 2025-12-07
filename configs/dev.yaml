@@ -35,8 +35,12 @@ llm:
 
 # Database Configuration (M2+)
 database:
-  type: "sqlite"
-  path: "data/chinook.db"
+  type: "mysql"
+  host: "localhost"
+  port: 3306
+  user: "root"
+  password: ""
+  database: "chinook"
   read_only: true
   max_rows: 1000
   timeout: 10

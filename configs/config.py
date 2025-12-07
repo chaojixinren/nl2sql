@@ -79,8 +79,14 @@ class Config:
             "embedding_model": os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-zh-v1.5"),
 
             # Database
-            "db_type": os.getenv("DB_TYPE", "sqlite"),
-            "db_path": os.getenv("DB_PATH", "data/chinook.db"),
+            "db_type": os.getenv("DB_TYPE", "mysql"),
+            
+            # MySQL Configuration (新增)
+            "mysql_host": os.getenv("MYSQL_HOST", "localhost"),
+            "mysql_port": int(os.getenv("MYSQL_PORT", "3306")),
+            "mysql_user": os.getenv("MYSQL_USER", "root"),
+            "mysql_password": os.getenv("MYSQL_PASSWORD", ""),
+            "mysql_database": os.getenv("MYSQL_DATABASE", "chinook"),
 
             # System
             "log_level": os.getenv("LOG_LEVEL", "INFO"),

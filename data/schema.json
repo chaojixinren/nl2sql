@@ -1,14 +1,14 @@
 {
-  "database_type": "sqlite",
-  "generated_at": "2025-12-07T15:44:31.351546",
+  "database_type": "mysql",
+  "generated_at": "2025-12-07T16:15:51.296649",
   "tables": [
     {
-      "name": "Album",
+      "name": "album",
       "description": "",
       "columns": [
         {
           "name": "AlbumId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": true,
           "not_null": true,
           "description": "",
@@ -19,13 +19,13 @@
           ],
           "sample_values": [
             1,
-            4,
-            2
+            2,
+            3
           ]
         },
         {
           "name": "Title",
-          "type": "NVARCHAR(160)",
+          "type": "varchar(160)",
           "primary_key": false,
           "not_null": true,
           "description": "",
@@ -41,14 +41,14 @@
         },
         {
           "name": "ArtistId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": false,
           "not_null": true,
           "description": "",
           "aliases": [
-            "artist_id",
             "artistid",
-            "艺术家编号"
+            "艺术家编号",
+            "artist_id"
           ],
           "sample_values": [
             1,
@@ -57,29 +57,23 @@
           ]
         }
       ],
-      "foreign_keys": [
-        {
-          "column": "ArtistId",
-          "references_table": "Artist",
-          "references_column": "ArtistId"
-        }
-      ],
+      "foreign_keys": [],
       "row_count": 347
     },
     {
-      "name": "Artist",
+      "name": "artist",
       "description": "",
       "columns": [
         {
           "name": "ArtistId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": true,
           "not_null": true,
           "description": "",
           "aliases": [
-            "artist_id",
             "artistid",
-            "艺术家编号"
+            "艺术家编号",
+            "artist_id"
           ],
           "sample_values": [
             1,
@@ -89,7 +83,7 @@
         },
         {
           "name": "Name",
-          "type": "NVARCHAR(120)",
+          "type": "varchar(120)",
           "primary_key": false,
           "not_null": false,
           "description": "",
@@ -108,29 +102,29 @@
       "row_count": 275
     },
     {
-      "name": "Customer",
+      "name": "customer",
       "description": "",
       "columns": [
         {
           "name": "CustomerId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": true,
           "not_null": true,
           "description": "",
           "aliases": [
-            "customerid",
+            "customer_id",
             "客户编号",
-            "customer_id"
+            "customerid"
           ],
           "sample_values": [
             1,
-            3,
-            12
+            2,
+            3
           ]
         },
         {
           "name": "FirstName",
-          "type": "NVARCHAR(40)",
+          "type": "varchar(40)",
           "primary_key": false,
           "not_null": true,
           "description": "",
@@ -147,13 +141,13 @@
         },
         {
           "name": "LastName",
-          "type": "NVARCHAR(20)",
+          "type": "varchar(20)",
           "primary_key": false,
           "not_null": true,
           "description": "",
           "aliases": [
-            "姓名称",
             "last_name",
+            "姓名称",
             "lastname"
           ],
           "sample_values": [
@@ -164,13 +158,13 @@
         },
         {
           "name": "Company",
-          "type": "NVARCHAR(80)",
+          "type": "varchar(80)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
-            "company",
-            "公司"
+            "公司",
+            "company"
           ],
           "sample_values": [
             "Embraer - Empresa Brasileira de Aeronáutica S.A.",
@@ -180,13 +174,13 @@
         },
         {
           "name": "Address",
-          "type": "NVARCHAR(70)",
+          "type": "varchar(70)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
-            "address",
-            "地址"
+            "地址",
+            "address"
           ],
           "sample_values": [
             "Av. Brigadeiro Faria Lima, 2170",
@@ -196,7 +190,7 @@
         },
         {
           "name": "City",
-          "type": "NVARCHAR(40)",
+          "type": "varchar(40)",
           "primary_key": false,
           "not_null": false,
           "description": "",
@@ -212,13 +206,13 @@
         },
         {
           "name": "State",
-          "type": "NVARCHAR(40)",
+          "type": "varchar(40)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
-            "州",
-            "state"
+            "state",
+            "州"
           ],
           "sample_values": [
             "SP",
@@ -228,7 +222,7 @@
         },
         {
           "name": "Country",
-          "type": "NVARCHAR(40)",
+          "type": "varchar(40)",
           "primary_key": false,
           "not_null": false,
           "description": "",
@@ -244,14 +238,14 @@
         },
         {
           "name": "PostalCode",
-          "type": "NVARCHAR(10)",
+          "type": "varchar(10)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
             "postal_code",
-            "邮编代码",
-            "postalcode"
+            "postalcode",
+            "邮编代码"
           ],
           "sample_values": [
             "12227-000",
@@ -261,13 +255,13 @@
         },
         {
           "name": "Phone",
-          "type": "NVARCHAR(24)",
+          "type": "varchar(24)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
-            "phone",
-            "电话"
+            "电话",
+            "phone"
           ],
           "sample_values": [
             "+55 (12) 3923-5555",
@@ -277,13 +271,13 @@
         },
         {
           "name": "Fax",
-          "type": "NVARCHAR(24)",
+          "type": "varchar(24)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
-            "传真",
-            "fax"
+            "fax",
+            "传真"
           ],
           "sample_values": [
             "+55 (12) 3923-5566",
@@ -293,7 +287,7 @@
         },
         {
           "name": "Email",
-          "type": "NVARCHAR(60)",
+          "type": "varchar(60)",
           "primary_key": false,
           "not_null": true,
           "description": "",
@@ -309,61 +303,55 @@
         },
         {
           "name": "SupportRepId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
             "supportrepid",
-            "客服代表编号",
-            "support_rep_id"
+            "support_rep_id",
+            "客服代表编号"
           ],
           "sample_values": [
             3,
-            4,
-            5
+            5,
+            4
           ]
         }
       ],
-      "foreign_keys": [
-        {
-          "column": "SupportRepId",
-          "references_table": "Employee",
-          "references_column": "EmployeeId"
-        }
-      ],
+      "foreign_keys": [],
       "row_count": 59
     },
     {
-      "name": "Employee",
+      "name": "employee",
       "description": "",
       "columns": [
         {
           "name": "EmployeeId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": true,
           "not_null": true,
           "description": "",
           "aliases": [
-            "employee_id",
+            "员工编号",
             "employeeid",
-            "员工编号"
+            "employee_id"
           ],
           "sample_values": [
             1,
             2,
-            6
+            3
           ]
         },
         {
           "name": "LastName",
-          "type": "NVARCHAR(20)",
+          "type": "varchar(20)",
           "primary_key": false,
           "not_null": true,
           "description": "",
           "aliases": [
-            "姓名称",
             "last_name",
+            "姓名称",
             "lastname"
           ],
           "sample_values": [
@@ -374,7 +362,7 @@
         },
         {
           "name": "FirstName",
-          "type": "NVARCHAR(20)",
+          "type": "varchar(20)",
           "primary_key": false,
           "not_null": true,
           "description": "",
@@ -391,7 +379,7 @@
         },
         {
           "name": "Title",
-          "type": "NVARCHAR(30)",
+          "type": "varchar(30)",
           "primary_key": false,
           "not_null": false,
           "description": "",
@@ -407,14 +395,14 @@
         },
         {
           "name": "ReportsTo",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
-            "reports_to",
+            "汇报to",
             "reportsto",
-            "汇报to"
+            "reports_to"
           ],
           "sample_values": [
             1,
@@ -424,14 +412,14 @@
         },
         {
           "name": "BirthDate",
-          "type": "DATETIME",
+          "type": "datetime",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
+            "生日日期",
             "birthdate",
-            "birth_date",
-            "生日日期"
+            "birth_date"
           ],
           "sample_values": [
             "1962-02-18 00:00:00",
@@ -441,14 +429,14 @@
         },
         {
           "name": "HireDate",
-          "type": "DATETIME",
+          "type": "datetime",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
-            "入职日期",
             "hiredate",
-            "hire_date"
+            "hire_date",
+            "入职日期"
           ],
           "sample_values": [
             "2002-08-14 00:00:00",
@@ -458,13 +446,13 @@
         },
         {
           "name": "Address",
-          "type": "NVARCHAR(70)",
+          "type": "varchar(70)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
-            "address",
-            "地址"
+            "地址",
+            "address"
           ],
           "sample_values": [
             "11120 Jasper Ave NW",
@@ -474,7 +462,7 @@
         },
         {
           "name": "City",
-          "type": "NVARCHAR(40)",
+          "type": "varchar(40)",
           "primary_key": false,
           "not_null": false,
           "description": "",
@@ -490,13 +478,13 @@
         },
         {
           "name": "State",
-          "type": "NVARCHAR(40)",
+          "type": "varchar(40)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
-            "州",
-            "state"
+            "state",
+            "州"
           ],
           "sample_values": [
             "AB"
@@ -504,7 +492,7 @@
         },
         {
           "name": "Country",
-          "type": "NVARCHAR(40)",
+          "type": "varchar(40)",
           "primary_key": false,
           "not_null": false,
           "description": "",
@@ -518,14 +506,14 @@
         },
         {
           "name": "PostalCode",
-          "type": "NVARCHAR(10)",
+          "type": "varchar(10)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
             "postal_code",
-            "邮编代码",
-            "postalcode"
+            "postalcode",
+            "邮编代码"
           ],
           "sample_values": [
             "T5K 2N1",
@@ -535,13 +523,13 @@
         },
         {
           "name": "Phone",
-          "type": "NVARCHAR(24)",
+          "type": "varchar(24)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
-            "phone",
-            "电话"
+            "电话",
+            "phone"
           ],
           "sample_values": [
             "+1 (780) 428-9482",
@@ -551,13 +539,13 @@
         },
         {
           "name": "Fax",
-          "type": "NVARCHAR(24)",
+          "type": "varchar(24)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
-            "传真",
-            "fax"
+            "fax",
+            "传真"
           ],
           "sample_values": [
             "+1 (780) 428-3457",
@@ -567,7 +555,7 @@
         },
         {
           "name": "Email",
-          "type": "NVARCHAR(60)",
+          "type": "varchar(60)",
           "primary_key": false,
           "not_null": false,
           "description": "",
@@ -582,29 +570,23 @@
           ]
         }
       ],
-      "foreign_keys": [
-        {
-          "column": "ReportsTo",
-          "references_table": "Employee",
-          "references_column": "EmployeeId"
-        }
-      ],
+      "foreign_keys": [],
       "row_count": 8
     },
     {
-      "name": "Genre",
+      "name": "genre",
       "description": "",
       "columns": [
         {
           "name": "GenreId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": true,
           "not_null": true,
           "description": "",
           "aliases": [
-            "genreid",
+            "流派编号",
             "genre_id",
-            "流派编号"
+            "genreid"
           ],
           "sample_values": [
             1,
@@ -614,7 +596,7 @@
         },
         {
           "name": "Name",
-          "type": "NVARCHAR(120)",
+          "type": "varchar(120)",
           "primary_key": false,
           "not_null": false,
           "description": "",
@@ -633,36 +615,19 @@
       "row_count": 25
     },
     {
-      "name": "Invoice",
+      "name": "invoice",
       "description": "",
       "columns": [
         {
           "name": "InvoiceId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": true,
           "not_null": true,
           "description": "",
           "aliases": [
-            "发票编号",
             "invoice_id",
-            "invoiceid"
-          ],
-          "sample_values": [
-            98,
-            121,
-            143
-          ]
-        },
-        {
-          "name": "CustomerId",
-          "type": "INTEGER",
-          "primary_key": false,
-          "not_null": true,
-          "description": "",
-          "aliases": [
-            "customerid",
-            "客户编号",
-            "customer_id"
+            "invoiceid",
+            "发票编号"
           ],
           "sample_values": [
             1,
@@ -671,15 +636,32 @@
           ]
         },
         {
+          "name": "CustomerId",
+          "type": "int",
+          "primary_key": false,
+          "not_null": true,
+          "description": "",
+          "aliases": [
+            "customer_id",
+            "客户编号",
+            "customerid"
+          ],
+          "sample_values": [
+            2,
+            4,
+            8
+          ]
+        },
+        {
           "name": "InvoiceDate",
-          "type": "DATETIME",
+          "type": "datetime",
           "primary_key": false,
           "not_null": true,
           "description": "",
           "aliases": [
             "发票日期",
-            "invoice_date",
-            "invoicedate"
+            "invoicedate",
+            "invoice_date"
           ],
           "sample_values": [
             "2021-01-01 00:00:00",
@@ -689,14 +671,14 @@
         },
         {
           "name": "BillingAddress",
-          "type": "NVARCHAR(70)",
+          "type": "varchar(70)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
+            "billing_address",
             "账单地址",
-            "billingaddress",
-            "billing_address"
+            "billingaddress"
           ],
           "sample_values": [
             "Theodor-Heuss-Straße 34",
@@ -706,14 +688,14 @@
         },
         {
           "name": "BillingCity",
-          "type": "NVARCHAR(40)",
+          "type": "varchar(40)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
             "账单城市",
-            "billing_city",
-            "billingcity"
+            "billingcity",
+            "billing_city"
           ],
           "sample_values": [
             "Stuttgart",
@@ -723,14 +705,14 @@
         },
         {
           "name": "BillingState",
-          "type": "NVARCHAR(40)",
+          "type": "varchar(40)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
             "billing_state",
-            "billingstate",
-            "账单州"
+            "账单州",
+            "billingstate"
           ],
           "sample_values": [
             "AB",
@@ -740,14 +722,14 @@
         },
         {
           "name": "BillingCountry",
-          "type": "NVARCHAR(40)",
+          "type": "varchar(40)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
-            "billing_country",
             "billingcountry",
-            "账单国家"
+            "账单国家",
+            "billing_country"
           ],
           "sample_values": [
             "Germany",
@@ -757,14 +739,14 @@
         },
         {
           "name": "BillingPostalCode",
-          "type": "NVARCHAR(10)",
+          "type": "varchar(10)",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
             "billing_postal_code",
-            "billingpostalcode",
-            "账单邮编代码"
+            "账单邮编代码",
+            "billingpostalcode"
           ],
           "sample_values": [
             "70174",
@@ -774,7 +756,7 @@
         },
         {
           "name": "Total",
-          "type": "NUMERIC(10,2)",
+          "type": "decimal(10,2)",
           "primary_key": false,
           "not_null": true,
           "description": "",
@@ -783,52 +765,46 @@
             "总计"
           ],
           "sample_values": [
-            1.98,
-            3.96,
-            5.94
+            "1.98",
+            "3.96",
+            "5.94"
           ]
         }
       ],
-      "foreign_keys": [
-        {
-          "column": "CustomerId",
-          "references_table": "Customer",
-          "references_column": "CustomerId"
-        }
-      ],
+      "foreign_keys": [],
       "row_count": 412
     },
     {
-      "name": "InvoiceLine",
+      "name": "invoiceline",
       "description": "",
       "columns": [
         {
           "name": "InvoiceLineId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": true,
           "not_null": true,
           "description": "",
           "aliases": [
             "invoicelineid",
-            "invoice_line_id",
-            "发票line编号"
+            "发票line编号",
+            "invoice_line_id"
           ],
           "sample_values": [
-            579,
             1,
-            1154
+            2,
+            3
           ]
         },
         {
           "name": "InvoiceId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": false,
           "not_null": true,
           "description": "",
           "aliases": [
-            "发票编号",
             "invoice_id",
-            "invoiceid"
+            "invoiceid",
+            "发票编号"
           ],
           "sample_values": [
             1,
@@ -838,24 +814,24 @@
         },
         {
           "name": "TrackId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": false,
           "not_null": true,
           "description": "",
           "aliases": [
-            "track_id",
+            "曲目编号",
             "trackid",
-            "曲目编号"
+            "track_id"
           ],
           "sample_values": [
-            1,
             2,
-            3
+            4,
+            6
           ]
         },
         {
           "name": "UnitPrice",
-          "type": "NUMERIC(10,2)",
+          "type": "decimal(10,2)",
           "primary_key": false,
           "not_null": true,
           "description": "",
@@ -865,53 +841,42 @@
             "unit_price"
           ],
           "sample_values": [
-            0.99,
-            1.99
+            "0.99",
+            "1.99"
           ]
         },
         {
           "name": "Quantity",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": false,
           "not_null": true,
           "description": "",
           "aliases": [
-            "quantity",
-            "数量"
+            "数量",
+            "quantity"
           ],
           "sample_values": [
             1
           ]
         }
       ],
-      "foreign_keys": [
-        {
-          "column": "TrackId",
-          "references_table": "Track",
-          "references_column": "TrackId"
-        },
-        {
-          "column": "InvoiceId",
-          "references_table": "Invoice",
-          "references_column": "InvoiceId"
-        }
-      ],
+      "foreign_keys": [],
       "row_count": 2240
     },
     {
-      "name": "MediaType",
+      "name": "mediatype",
       "description": "",
       "columns": [
         {
           "name": "MediaTypeId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": true,
           "not_null": true,
           "description": "",
           "aliases": [
+            "media_type_id",
             "mediatypeid",
-            "媒体类型编号",
-            "media_type_id"
+            "媒体类型编号"
           ],
           "sample_values": [
             1,
@@ -921,7 +886,7 @@
         },
         {
           "name": "Name",
-          "type": "NVARCHAR(120)",
+          "type": "varchar(120)",
           "primary_key": false,
           "not_null": false,
           "description": "",
@@ -940,19 +905,19 @@
       "row_count": 5
     },
     {
-      "name": "Playlist",
+      "name": "playlist",
       "description": "",
       "columns": [
         {
           "name": "PlaylistId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": true,
           "not_null": true,
           "description": "",
           "aliases": [
             "playlist_id",
-            "playlistid",
-            "播放列表编号"
+            "播放列表编号",
+            "playlistid"
           ],
           "sample_values": [
             1,
@@ -962,7 +927,7 @@
         },
         {
           "name": "Name",
-          "type": "NVARCHAR(120)",
+          "type": "varchar(120)",
           "primary_key": false,
           "not_null": false,
           "description": "",
@@ -981,19 +946,19 @@
       "row_count": 18
     },
     {
-      "name": "PlaylistTrack",
+      "name": "playlisttrack",
       "description": "",
       "columns": [
         {
           "name": "PlaylistId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": true,
           "not_null": true,
           "description": "",
           "aliases": [
             "playlist_id",
-            "playlistid",
-            "播放列表编号"
+            "播放列表编号",
+            "playlistid"
           ],
           "sample_values": [
             1,
@@ -1003,14 +968,14 @@
         },
         {
           "name": "TrackId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": true,
           "not_null": true,
           "description": "",
           "aliases": [
-            "track_id",
+            "曲目编号",
             "trackid",
-            "曲目编号"
+            "track_id"
           ],
           "sample_values": [
             1,
@@ -1019,44 +984,33 @@
           ]
         }
       ],
-      "foreign_keys": [
-        {
-          "column": "TrackId",
-          "references_table": "Track",
-          "references_column": "TrackId"
-        },
-        {
-          "column": "PlaylistId",
-          "references_table": "Playlist",
-          "references_column": "PlaylistId"
-        }
-      ],
+      "foreign_keys": [],
       "row_count": 8715
     },
     {
-      "name": "Track",
+      "name": "track",
       "description": "",
       "columns": [
         {
           "name": "TrackId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": true,
           "not_null": true,
           "description": "",
           "aliases": [
-            "track_id",
+            "曲目编号",
             "trackid",
-            "曲目编号"
+            "track_id"
           ],
           "sample_values": [
             1,
-            6,
-            7
+            2,
+            3
           ]
         },
         {
           "name": "Name",
-          "type": "NVARCHAR(200)",
+          "type": "varchar(200)",
           "primary_key": false,
           "not_null": true,
           "description": "",
@@ -1072,7 +1026,7 @@
         },
         {
           "name": "AlbumId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": false,
           "not_null": false,
           "description": "",
@@ -1089,14 +1043,14 @@
         },
         {
           "name": "MediaTypeId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": false,
           "not_null": true,
           "description": "",
           "aliases": [
+            "media_type_id",
             "mediatypeid",
-            "媒体类型编号",
-            "media_type_id"
+            "媒体类型编号"
           ],
           "sample_values": [
             1,
@@ -1106,14 +1060,14 @@
         },
         {
           "name": "GenreId",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
-            "genreid",
+            "流派编号",
             "genre_id",
-            "流派编号"
+            "genreid"
           ],
           "sample_values": [
             1,
@@ -1123,7 +1077,7 @@
         },
         {
           "name": "Composer",
-          "type": "NVARCHAR(220)",
+          "type": "varchar(220)",
           "primary_key": false,
           "not_null": false,
           "description": "",
@@ -1139,13 +1093,13 @@
         },
         {
           "name": "Milliseconds",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": false,
           "not_null": true,
           "description": "",
           "aliases": [
-            "milliseconds",
-            "毫秒"
+            "毫秒",
+            "milliseconds"
           ],
           "sample_values": [
             343719,
@@ -1155,13 +1109,13 @@
         },
         {
           "name": "Bytes",
-          "type": "INTEGER",
+          "type": "int",
           "primary_key": false,
           "not_null": false,
           "description": "",
           "aliases": [
-            "bytes",
-            "字节"
+            "字节",
+            "bytes"
           ],
           "sample_values": [
             11170334,
@@ -1171,7 +1125,7 @@
         },
         {
           "name": "UnitPrice",
-          "type": "NUMERIC(10,2)",
+          "type": "decimal(10,2)",
           "primary_key": false,
           "not_null": true,
           "description": "",
@@ -1181,441 +1135,425 @@
             "unit_price"
           ],
           "sample_values": [
-            0.99,
-            1.99
+            "0.99",
+            "1.99"
           ]
         }
       ],
-      "foreign_keys": [
-        {
-          "column": "MediaTypeId",
-          "references_table": "MediaType",
-          "references_column": "MediaTypeId"
-        },
-        {
-          "column": "GenreId",
-          "references_table": "Genre",
-          "references_column": "GenreId"
-        },
-        {
-          "column": "AlbumId",
-          "references_table": "Album",
-          "references_column": "AlbumId"
-        }
-      ],
+      "foreign_keys": [],
       "row_count": 3503
     }
   ],
   "table_list": [
-    "Album",
-    "Artist",
-    "Customer",
-    "Employee",
-    "Genre",
-    "Invoice",
-    "InvoiceLine",
-    "MediaType",
-    "Playlist",
-    "PlaylistTrack",
-    "Track"
+    "album",
+    "artist",
+    "customer",
+    "employee",
+    "genre",
+    "invoice",
+    "invoiceline",
+    "mediatype",
+    "playlist",
+    "playlisttrack",
+    "track"
   ],
   "field_index": {
     "albumid": [
       {
-        "table": "Album",
+        "table": "album",
         "column": "AlbumId",
-        "type": "INTEGER"
+        "type": "int"
       },
       {
-        "table": "Track",
+        "table": "track",
         "column": "AlbumId",
-        "type": "INTEGER"
+        "type": "int"
       }
     ],
     "title": [
       {
-        "table": "Album",
+        "table": "album",
         "column": "Title",
-        "type": "NVARCHAR(160)"
+        "type": "varchar(160)"
       },
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "Title",
-        "type": "NVARCHAR(30)"
+        "type": "varchar(30)"
       }
     ],
     "artistid": [
       {
-        "table": "Album",
+        "table": "album",
         "column": "ArtistId",
-        "type": "INTEGER"
+        "type": "int"
       },
       {
-        "table": "Artist",
+        "table": "artist",
         "column": "ArtistId",
-        "type": "INTEGER"
+        "type": "int"
       }
     ],
     "name": [
       {
-        "table": "Artist",
+        "table": "artist",
         "column": "Name",
-        "type": "NVARCHAR(120)"
+        "type": "varchar(120)"
       },
       {
-        "table": "Genre",
+        "table": "genre",
         "column": "Name",
-        "type": "NVARCHAR(120)"
+        "type": "varchar(120)"
       },
       {
-        "table": "MediaType",
+        "table": "mediatype",
         "column": "Name",
-        "type": "NVARCHAR(120)"
+        "type": "varchar(120)"
       },
       {
-        "table": "Playlist",
+        "table": "playlist",
         "column": "Name",
-        "type": "NVARCHAR(120)"
+        "type": "varchar(120)"
       },
       {
-        "table": "Track",
+        "table": "track",
         "column": "Name",
-        "type": "NVARCHAR(200)"
+        "type": "varchar(200)"
       }
     ],
     "customerid": [
       {
-        "table": "Customer",
+        "table": "customer",
         "column": "CustomerId",
-        "type": "INTEGER"
+        "type": "int"
       },
       {
-        "table": "Invoice",
+        "table": "invoice",
         "column": "CustomerId",
-        "type": "INTEGER"
+        "type": "int"
       }
     ],
     "firstname": [
       {
-        "table": "Customer",
+        "table": "customer",
         "column": "FirstName",
-        "type": "NVARCHAR(40)"
+        "type": "varchar(40)"
       },
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "FirstName",
-        "type": "NVARCHAR(20)"
+        "type": "varchar(20)"
       }
     ],
     "lastname": [
       {
-        "table": "Customer",
+        "table": "customer",
         "column": "LastName",
-        "type": "NVARCHAR(20)"
+        "type": "varchar(20)"
       },
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "LastName",
-        "type": "NVARCHAR(20)"
+        "type": "varchar(20)"
       }
     ],
     "company": [
       {
-        "table": "Customer",
+        "table": "customer",
         "column": "Company",
-        "type": "NVARCHAR(80)"
+        "type": "varchar(80)"
       }
     ],
     "address": [
       {
-        "table": "Customer",
+        "table": "customer",
         "column": "Address",
-        "type": "NVARCHAR(70)"
+        "type": "varchar(70)"
       },
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "Address",
-        "type": "NVARCHAR(70)"
+        "type": "varchar(70)"
       }
     ],
     "city": [
       {
-        "table": "Customer",
+        "table": "customer",
         "column": "City",
-        "type": "NVARCHAR(40)"
+        "type": "varchar(40)"
       },
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "City",
-        "type": "NVARCHAR(40)"
+        "type": "varchar(40)"
       }
     ],
     "state": [
       {
-        "table": "Customer",
+        "table": "customer",
         "column": "State",
-        "type": "NVARCHAR(40)"
+        "type": "varchar(40)"
       },
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "State",
-        "type": "NVARCHAR(40)"
+        "type": "varchar(40)"
       }
     ],
     "country": [
       {
-        "table": "Customer",
+        "table": "customer",
         "column": "Country",
-        "type": "NVARCHAR(40)"
+        "type": "varchar(40)"
       },
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "Country",
-        "type": "NVARCHAR(40)"
+        "type": "varchar(40)"
       }
     ],
     "postalcode": [
       {
-        "table": "Customer",
+        "table": "customer",
         "column": "PostalCode",
-        "type": "NVARCHAR(10)"
+        "type": "varchar(10)"
       },
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "PostalCode",
-        "type": "NVARCHAR(10)"
+        "type": "varchar(10)"
       }
     ],
     "phone": [
       {
-        "table": "Customer",
+        "table": "customer",
         "column": "Phone",
-        "type": "NVARCHAR(24)"
+        "type": "varchar(24)"
       },
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "Phone",
-        "type": "NVARCHAR(24)"
+        "type": "varchar(24)"
       }
     ],
     "fax": [
       {
-        "table": "Customer",
+        "table": "customer",
         "column": "Fax",
-        "type": "NVARCHAR(24)"
+        "type": "varchar(24)"
       },
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "Fax",
-        "type": "NVARCHAR(24)"
+        "type": "varchar(24)"
       }
     ],
     "email": [
       {
-        "table": "Customer",
+        "table": "customer",
         "column": "Email",
-        "type": "NVARCHAR(60)"
+        "type": "varchar(60)"
       },
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "Email",
-        "type": "NVARCHAR(60)"
+        "type": "varchar(60)"
       }
     ],
     "supportrepid": [
       {
-        "table": "Customer",
+        "table": "customer",
         "column": "SupportRepId",
-        "type": "INTEGER"
+        "type": "int"
       }
     ],
     "employeeid": [
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "EmployeeId",
-        "type": "INTEGER"
+        "type": "int"
       }
     ],
     "reportsto": [
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "ReportsTo",
-        "type": "INTEGER"
+        "type": "int"
       }
     ],
     "birthdate": [
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "BirthDate",
-        "type": "DATETIME"
+        "type": "datetime"
       }
     ],
     "hiredate": [
       {
-        "table": "Employee",
+        "table": "employee",
         "column": "HireDate",
-        "type": "DATETIME"
+        "type": "datetime"
       }
     ],
     "genreid": [
       {
-        "table": "Genre",
+        "table": "genre",
         "column": "GenreId",
-        "type": "INTEGER"
+        "type": "int"
       },
       {
-        "table": "Track",
+        "table": "track",
         "column": "GenreId",
-        "type": "INTEGER"
+        "type": "int"
       }
     ],
     "invoiceid": [
       {
-        "table": "Invoice",
+        "table": "invoice",
         "column": "InvoiceId",
-        "type": "INTEGER"
+        "type": "int"
       },
       {
-        "table": "InvoiceLine",
+        "table": "invoiceline",
         "column": "InvoiceId",
-        "type": "INTEGER"
+        "type": "int"
       }
     ],
     "invoicedate": [
       {
-        "table": "Invoice",
+        "table": "invoice",
         "column": "InvoiceDate",
-        "type": "DATETIME"
+        "type": "datetime"
       }
     ],
     "billingaddress": [
       {
-        "table": "Invoice",
+        "table": "invoice",
         "column": "BillingAddress",
-        "type": "NVARCHAR(70)"
+        "type": "varchar(70)"
       }
     ],
     "billingcity": [
       {
-        "table": "Invoice",
+        "table": "invoice",
         "column": "BillingCity",
-        "type": "NVARCHAR(40)"
+        "type": "varchar(40)"
       }
     ],
     "billingstate": [
       {
-        "table": "Invoice",
+        "table": "invoice",
         "column": "BillingState",
-        "type": "NVARCHAR(40)"
+        "type": "varchar(40)"
       }
     ],
     "billingcountry": [
       {
-        "table": "Invoice",
+        "table": "invoice",
         "column": "BillingCountry",
-        "type": "NVARCHAR(40)"
+        "type": "varchar(40)"
       }
     ],
     "billingpostalcode": [
       {
-        "table": "Invoice",
+        "table": "invoice",
         "column": "BillingPostalCode",
-        "type": "NVARCHAR(10)"
+        "type": "varchar(10)"
       }
     ],
     "total": [
       {
-        "table": "Invoice",
+        "table": "invoice",
         "column": "Total",
-        "type": "NUMERIC(10,2)"
+        "type": "decimal(10,2)"
       }
     ],
     "invoicelineid": [
       {
-        "table": "InvoiceLine",
+        "table": "invoiceline",
         "column": "InvoiceLineId",
-        "type": "INTEGER"
+        "type": "int"
       }
     ],
     "trackid": [
       {
-        "table": "InvoiceLine",
+        "table": "invoiceline",
         "column": "TrackId",
-        "type": "INTEGER"
+        "type": "int"
       },
       {
-        "table": "PlaylistTrack",
+        "table": "playlisttrack",
         "column": "TrackId",
-        "type": "INTEGER"
+        "type": "int"
       },
       {
-        "table": "Track",
+        "table": "track",
         "column": "TrackId",
-        "type": "INTEGER"
+        "type": "int"
       }
     ],
     "unitprice": [
       {
-        "table": "InvoiceLine",
+        "table": "invoiceline",
         "column": "UnitPrice",
-        "type": "NUMERIC(10,2)"
+        "type": "decimal(10,2)"
       },
       {
-        "table": "Track",
+        "table": "track",
         "column": "UnitPrice",
-        "type": "NUMERIC(10,2)"
+        "type": "decimal(10,2)"
       }
     ],
     "quantity": [
       {
-        "table": "InvoiceLine",
+        "table": "invoiceline",
         "column": "Quantity",
-        "type": "INTEGER"
+        "type": "int"
       }
     ],
     "mediatypeid": [
       {
-        "table": "MediaType",
+        "table": "mediatype",
         "column": "MediaTypeId",
-        "type": "INTEGER"
+        "type": "int"
       },
       {
-        "table": "Track",
+        "table": "track",
         "column": "MediaTypeId",
-        "type": "INTEGER"
+        "type": "int"
       }
     ],
     "playlistid": [
       {
-        "table": "Playlist",
+        "table": "playlist",
         "column": "PlaylistId",
-        "type": "INTEGER"
+        "type": "int"
       },
       {
-        "table": "PlaylistTrack",
+        "table": "playlisttrack",
         "column": "PlaylistId",
-        "type": "INTEGER"
+        "type": "int"
       }
     ],
     "composer": [
       {
-        "table": "Track",
+        "table": "track",
         "column": "Composer",
-        "type": "NVARCHAR(220)"
+        "type": "varchar(220)"
       }
     ],
     "milliseconds": [
       {
-        "table": "Track",
+        "table": "track",
         "column": "Milliseconds",
-        "type": "INTEGER"
+        "type": "int"
       }
     ],
     "bytes": [
       {
-        "table": "Track",
+        "table": "track",
         "column": "Bytes",
-        "type": "INTEGER"
+        "type": "int"
       }
     ]
   }

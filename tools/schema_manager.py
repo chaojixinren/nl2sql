@@ -50,7 +50,7 @@ class SchemaManager:
         tables = db_client.get_table_names()
         
         schema = {
-            "database_type": "sqlite",
+            "database_type": "mysql",
             "generated_at": datetime.now().isoformat(),
             "tables": [],
             "table_list": tables,  # 表清单
@@ -117,42 +117,51 @@ class SchemaManager:
         return schema
     
     def _get_foreign_keys(self, table_name: str) -> List[Dict]:
-        """获取表的外键信息"""
+        """获取表的外键信息 (MySQL)"""
+        foreign_keys = []
         try:
-            import sqlite3
-            conn = sqlite3.connect(db_client.db_path)
+            conn = db_client._get_connection()
             cursor = conn.cursor()
-            cursor.execute(f"PRAGMA foreign_key_list({table_name})")
-            fks = cursor.fetchall()
+            
+            cursor.execute(f"""
+                SELECT 
+                    COLUMN_NAME,
+                    REFERENCED_TABLE_NAME,
+                    REFERENCED_COLUMN_NAME
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = '{db_client.mysql_config["database"]}'
+                AND TABLE_NAME = '{table_name}'
+                AND REFERENCED_TABLE_NAME IS NOT NULL
+            """)
+            for row in cursor.fetchall():
+                foreign_keys.append({
+                    "column": row["COLUMN_NAME"],
+                    "references_table": row["REFERENCED_TABLE_NAME"],
+                    "references_column": row["REFERENCED_COLUMN_NAME"]
+                })
+            
             cursor.close()
             conn.close()
-            
-            return [
-                {
-                    "column": fk[3],
-                    "references_table": fk[2],
-                    "references_column": fk[4]
-                }
-                for fk in fks
-            ]
-        except Exception:
-            return []
+        except Exception as e:
+            print(f"Error getting foreign keys for {table_name}: {e}")
+        
+        return foreign_keys
     
     def _get_row_count(self, table_name: str) -> int:
-        """获取表行数"""
-        result = db_client.query(f"SELECT COUNT(*) as cnt FROM {table_name}")
+        """获取表行数 (MySQL)"""
+        result = db_client.query(f"SELECT COUNT(*) as cnt FROM `{table_name}`")
         if result["ok"] and result["rows"]:
             return result["rows"][0]["cnt"]
         return 0
     
     def _get_sample_values(self, table_name: str, columns: List[Dict], limit: int) -> Dict[str, List]:
-        """获取每个字段的示例值"""
+        """获取每个字段的示例值 (MySQL)"""
         sample_values = {}
         for col in columns:
             col_name = col["name"]
             try:
                 result = db_client.query(
-                    f"SELECT DISTINCT [{col_name}] FROM [{table_name}] WHERE [{col_name}] IS NOT NULL LIMIT {limit}"
+                    f"SELECT DISTINCT `{col_name}` FROM `{table_name}` WHERE `{col_name}` IS NOT NULL LIMIT {limit}"
                 )
                 if result["ok"]:
                     values = [row[col_name] for row in result["rows"]]
