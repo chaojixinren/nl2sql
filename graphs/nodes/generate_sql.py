@@ -137,39 +137,3 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
             "sql_generated_at": datetime.now().isoformat()
         }
 
-
-if __name__ == "__main__":
-    """Test SQL generation node"""
-    import sys
-
-    print("=== SQL Generation Node Test ===\n")
-
-    # Test cases
-    test_questions = [
-        "查询所有客户",
-        "统计每个城市的客户数量",
-        "查询销售额最高的前10个客户"
-    ]
-
-    for i, question in enumerate(test_questions, 1):
-        print(f"\n{'='*60}")
-        print(f"Test Case {i}")
-        print(f"{'='*60}")
-
-        test_state: NL2SQLState = {
-            "question": question,
-            "session_id": f"test-{i}",
-            "timestamp": None,
-            "intent": None,
-            "candidate_sql": None,
-            "sql_generated_at": None
-        }
-
-        result = generate_sql_node(test_state)
-
-        print(f"\n✓ SQL Generated:")
-        print(f"  {result.get('candidate_sql')}")
-
-    print(f"\n{'='*60}")
-    print("Test Complete!")
-    print(f"{'='*60}")
