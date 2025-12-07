@@ -15,7 +15,7 @@ class NL2SQLState(TypedDict):
     - rag_evidence (M6)
     - candidate_sql (M1) ✓ Added
     - validation (M4)
-    - execution (M2)
+    - execution (M2) ✓ Added
     - answer (M9)
     - trace (M11)
     """

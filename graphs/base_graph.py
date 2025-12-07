@@ -205,32 +205,3 @@ def run_query(question: str, session_id: str = None) -> NL2SQLState:
     result = graph.invoke(initial_state)
 
     return result
-
-
-if __name__ == "__main__":
-    """
-    M2 Acceptance Test:
-    Input a question, generate SQL, and execute against database.
-    """
-    # Test cases - will work with Chinook database
-    test_questions = [
-        "Show all albums",
-        "How many tracks are there?",
-        "What are the top 5 longest tracks?"
-    ]
-
-    print("\n" + "="*70)
-    print("M2 - NL2SQL with Function Call Test")
-    print("="*70)
-
-    for i, question in enumerate(test_questions, 1):
-        print(f"\n### Test Case {i} ###")
-        result = run_query(question)
-        print(f"\nFinal State Keys: {list(result.keys())}")
-        print(f"SQL Generated: {'✓' if result.get('candidate_sql') else '✗'}")
-        exec_result = result.get('execution_result', {})
-        print(f"SQL Executed: {'✓' if exec_result.get('ok') else '✗'}")
-
-    print("\n" + "="*70)
-    print("M2 Test Complete!")
-    print("="*70)
