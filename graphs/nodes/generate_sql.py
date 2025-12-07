@@ -13,6 +13,8 @@ sys.path.insert(0, str(project_root))
 
 from graphs.state import NL2SQLState
 from tools.llm_client import llm_client
+from tools.db import db_client  
+from graphs.utils.performance import monitor_performance
 
 
 def load_prompt_template(template_name: str) -> str:
@@ -70,18 +72,27 @@ def extract_sql_from_response(response: str) -> str:
     return sql
 
 
+def get_database_schema() -> str:
+    """从数据库动态获取真实 schema"""
+    schemas = db_client.get_all_schemas()
+    
+    schema_text = "数据库类型: SQLite\n"
+    schema_text += "数据库表结构:\n"
+    
+    for table in schemas:
+        columns = ", ".join([
+            f"{col['name']} ({col['type']}{'  PK' if col['primary_key'] else ''})"
+            for col in table['columns']
+        ])
+        schema_text += f"- {table['table_name']} ({columns})\n"
+    
+    return schema_text
+
+
+@monitor_performance
 def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
     """
     Generate SQL from natural language question using LLM.
-
-    M1: Simple prompt engineering without schema or RAG.
-          Schema will be added in M3, RAG in M6.
-
-    Args:
-        state: Current NL2SQL state
-
-    Returns:
-        Updated state with candidate_sql
     """
     question = state.get("question", "")
 
@@ -91,18 +102,12 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
     # Load prompt template
     prompt_template = load_prompt_template("nl2sql")
 
-    # M1: No schema yet, use placeholder
-    # TODO M3: Replace with actual schema
-    schema_placeholder = """
-    示例表结构 (M1阶段占位, M3将使用真实Schema):
-    - customers (customer_id, customer_name, city, country)
-    - orders (order_id, customer_id, amount, order_date)
-    - products (product_id, product_name, price, category)
-    """
+    # 使用真实的数据库 schema（替换原来的占位符）
+    real_schema = get_database_schema()
 
     # Fill in the prompt template
     prompt = prompt_template.format(
-        schema=schema_placeholder.strip(),
+        schema=real_schema,
         question=question
     )
 

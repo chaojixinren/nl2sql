@@ -13,8 +13,10 @@ sys.path.insert(0, str(project_root))
 
 from graphs.state import NL2SQLState
 from tools.db import db_client
+from graphs.utils.performance import monitor_performance
 
 
+@monitor_performance
 def execute_sql_node(state: NL2SQLState) -> NL2SQLState:
     """
     Execute SQL query against the database.

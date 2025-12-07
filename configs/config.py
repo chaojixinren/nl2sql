@@ -16,6 +16,14 @@ load_dotenv()
 
 class Config:
     """Configuration manager for NL2SQL system."""
+    
+    def reload(self):
+        """重新加载配置"""
+        # 重新加载 .env 文件，override=True 确保覆盖已有的环境变量
+        load_dotenv(override=True)
+        self._load_yaml_config()
+        self._load_env_vars()
+        print("✓ Configuration reloaded")
 
     def __init__(self, env: str = "dev"):
         """
