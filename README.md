@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **当前版本**: M4 - SQL Guardrail（校验与自修复）  
+> **当前版本**: M5 - SQL Sandbox（安全与沙箱）  
 > **状态**: ✅ 核心功能已实现并测试通过
 
 ## 项目概述
@@ -92,8 +92,11 @@
    # 测试完整流程
    python test_graph.py
    
-   # 测试 SQL Guardrail 功能
+   # 测试 SQL Guardrail 功能 (M4)
    python test_guardrail.py
+   
+   # 测试 SQL Sandbox 功能 (M5)
+   python test_sandbox.py
    ```
 
 ### 使用示例
@@ -152,65 +155,19 @@ rookie-nl2sql-main/
 ├── tools/               # 工具模块
 │   ├── db.py           # 数据库客户端（MySQL）
 │   ├── llm_client.py   # LLM 客户端
-│   └── schema_manager.py # Schema 管理器
+│   ├── schema_manager.py # Schema 管理器
+│   └── sandbox.py      # SQL 沙箱安全模块 (M5)
 ├── prompts/             # Prompt 模板
 │   ├── nl2sql.txt      # SQL 生成提示词
 │   └── critique.txt    # SQL 错误分析提示词 (M4)
 ├── logs/                # 日志目录
 ├── test_graph.py        # 完整流程测试脚本
 ├── test_guardrail.py    # SQL Guardrail 功能测试脚本 (M4)
+├── test_sandbox.py      # SQL Sandbox 功能测试脚本 (M5)
 ├── requirements.txt     # 依赖列表
 └── README.md           # 项目说明
 ```
 
-## 核心功能
-
-### M4: SQL Guardrail（校验与自修复）
-
-SQL Guardrail 是 M4 版本新增的核心功能，确保生成的 SQL 语法正确并可自动修复。
-
-#### 功能特点
-
-1. **语法验证**
-   - 使用 `sqlglot` 进行 SQL 语法验证
-   - 在执行前捕获语法错误
-   - 支持 MySQL 方言验证
-   - 83%+ 的语法错误捕获率
-
-2. **错误分析**
-   - LLM 驱动的错误分析（`critique_sql_node`）
-   - 提供详细的错误原因和修复建议
-   - 基于数据库 Schema 的上下文分析
-
-3. **自动修复**
-   - 基于错误分析自动重新生成 SQL
-   - 最多 3 次重试机制
-   - 防止无限循环
-
-4. **完整流程**
-   ```
-   generate_sql → validate_sql → (失败) → critique_sql → generate_sql → validate_sql
-   ```
-
-#### 使用示例
-
-```python
-result = run_query("查询客户信息")
-
-# 检查验证结果
-if result.get('validation_passed'):
-    print("✓ SQL 验证通过")
-else:
-    print(f"✗ SQL 验证失败: {result.get('validation_errors')}")
-    print(f"重试次数: {result.get('regeneration_count', 0)}")
-```
-
-#### 测试
-
-运行专门的测试脚本验证功能：
-```bash
-python test_guardrail.py
-```
 
 ### 已实现功能
 
@@ -235,8 +192,15 @@ python test_guardrail.py
    - 自动重新生成修复后的 SQL（最多 3 次重试）
    - 完整的验证→分析→修复→再验证循环
 
-5. **SQL 执行** (`execute_sql_node`)
+5. **SQL 执行与沙箱安全** (`execute_sql_node`, `sandbox`) (M5)
    - 安全的只读查询执行
+   - SQL 安全检查：拦截危险关键字和模式
+   - 行数限制：自动添加 LIMIT，防止大量数据返回
+   - 执行超时：设置最大执行时间，防止长时间查询
+   - 安全日志：记录所有被拦截的 SQL 和原因
+   - 结构化错误：返回详细的错误代码和原因
+
+6. **SQL 执行** (`execute_sql_node`)
    - 结果格式化返回
    - 错误处理和日志记录
 
@@ -337,6 +301,7 @@ MYSQL_DATABASE=chinook
 - **安全与健壮**：只读白名单、拒绝 DML（增删改），仅允许 SELECT 查询。
 - **反馈闭环**：错误捕获→分析→重写→再次校验执行（M4 已实现）。
 - **SQL Guardrail**：语法验证→错误分析→自动修复→再验证的完整循环（M4）。
+- **SQL Sandbox**：危险关键字拦截、行数限制、执行超时、安全日志（M5）。
 - **评估机制**：测试脚本支持端到端验证，衡量可执行率、正确率与耗时。
 
 ## 通过本项目可以学到
@@ -387,17 +352,40 @@ python test_graph.py "查询所有艺术家的名字"
 python test_guardrail.py
 ```
 
+### 3. SQL Sandbox 功能测试 (`test_sandbox.py`) (M5)
+
+专门测试 SQL 安全防护功能：
+
+1. 检查沙箱配置
+2. 测试 SQL 安全检查（拦截恶意 SQL）
+3. 测试行数限制
+4. 测试数据库集成
+5. 测试安全日志记录
+
+运行测试：
+```bash
+python test_sandbox.py
+```
+
 测试结果示例：
-- ✅ sqlglot 依赖检查
-- ✅ 正确 SQL 验证
-- ✅ 错误 SQL 验证（83%+ 语法错误捕获率）
-- ✅ 重试决策逻辑
-- ✅ Critique 节点
-- ✅ 完整流程
+- ✅ 沙箱配置加载
+- ✅ SQL 安全检查（拦截 DROP, DELETE, UPDATE 等）
+- ✅ 行数限制（自动添加 LIMIT）
+- ✅ 数据库集成（恶意 SQL 被正确拦截）
+- ✅ 安全日志记录
 
 ## 版本历史
 
-### M4 - SQL Guardrail（当前版本）✅
+### M5 - SQL Sandbox（当前版本）✅
+
+- ✅ SQL 安全检查：拦截危险关键字（DROP, DELETE, UPDATE 等）
+- ✅ 行数限制：自动添加 LIMIT，防止大量数据返回
+- ✅ 执行超时：设置最大执行时间（默认 3 秒）
+- ✅ 安全日志：记录所有被拦截的 SQL 和拦截原因
+- ✅ 结构化错误：返回详细的错误代码（SANDBOX_*）和原因
+- ✅ 只读账户支持：建议使用只读数据库账户
+
+### M4 - SQL Guardrail ✅
 
 - ✅ SQL 语法验证：使用 sqlglot 进行语法验证
 - ✅ 错误分析与修复：LLM 驱动的错误分析和自动修复
@@ -435,6 +423,7 @@ python test_guardrail.py
 - ✅ **MySQL 支持**：已完成从 SQLite 到 MySQL 的迁移
 - ✅ **SQL 语法验证** (M4)：使用 sqlglot 进行语法验证，83%+ 错误捕获率
 - ✅ **SQL 自修复** (M4)：LLM 驱动的错误分析和自动修复，最多 3 次重试
+- ✅ **SQL 安全沙箱** (M5)：危险关键字拦截、行数限制、执行超时、安全日志
 
 
 ## 许可证

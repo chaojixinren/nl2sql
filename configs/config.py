@@ -158,6 +158,46 @@ class Config:
 
         return config
 
+    def get_sandbox_config(self) -> Dict[str, Any]:
+        """
+        Get sandbox security configuration.
+        
+        Returns:
+            Dictionary with sandbox settings
+        """
+        # Default sandbox configuration
+        default_config = {
+            "enabled": True,
+            "default_limit": 200,
+            "max_rows": 1000,
+            "max_execution_ms": 3000,
+            "forbidden_keywords": [
+                "insert", "update", "delete", "drop", "alter", "truncate",
+                "create", "grant", "revoke", "rename", "replace",
+                "into outfile", "load data", "sleep", "benchmark",
+                "exec", "execute", "call", "procedure", "function",
+                "lock", "unlock", "flush", "kill", "shutdown"
+            ]
+        }
+        
+        # Get from YAML config
+        sandbox_config = self.yaml_config.get("sandbox", {})
+        
+        # Merge with defaults
+        result = {**default_config, **sandbox_config}
+        
+        # Override with environment variables if present
+        if os.getenv("SANDBOX_ENABLED"):
+            result["enabled"] = os.getenv("SANDBOX_ENABLED").lower() == "true"
+        if os.getenv("SANDBOX_DEFAULT_LIMIT"):
+            result["default_limit"] = int(os.getenv("SANDBOX_DEFAULT_LIMIT"))
+        if os.getenv("SANDBOX_MAX_ROWS"):
+            result["max_rows"] = int(os.getenv("SANDBOX_MAX_ROWS"))
+        if os.getenv("SANDBOX_MAX_EXECUTION_MS"):
+            result["max_execution_ms"] = int(os.getenv("SANDBOX_MAX_EXECUTION_MS"))
+        
+        return result
+
     def get_all(self) -> Dict[str, Any]:
         """Get all configuration as a dictionary."""
         return {

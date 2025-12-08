@@ -65,8 +65,34 @@ graph:
   trace_enabled: true
 
 # Security Configuration (M5+)
-security:
-  enable_sandbox: true
-  allowed_operations: ["SELECT"]
-  max_execution_time: 10
-  max_result_rows: 1000
+sandbox:
+  enabled: true
+  default_limit: 200  # Default LIMIT if not specified
+  max_rows: 1000      # Maximum rows allowed (enforced)
+  max_execution_ms: 3000  # Maximum execution time in milliseconds
+  forbidden_keywords:
+    - insert
+    - update
+    - delete
+    - drop
+    - alter
+    - truncate
+    - create
+    - grant
+    - revoke
+    - rename
+    - replace
+    - "into outfile"
+    - "load data"
+    - sleep
+    - benchmark
+    - exec
+    - execute
+    - call
+    - procedure
+    - function
+    - lock
+    - unlock
+    - flush
+    - kill
+    - shutdown

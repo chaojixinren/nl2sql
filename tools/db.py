@@ -1,6 +1,7 @@
 """
 Database tools for NL2SQL system.
 M2: Implements function call-based database query execution.
+M5: Adds sandbox security checks and limits.
 Supports MySQL only.
 """
 import sys
@@ -15,6 +16,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from configs.config import config
+from tools.sandbox import check_sql_safety, apply_row_limit, log_security_event
 
 
 class DatabaseClient:
@@ -46,7 +48,9 @@ class DatabaseClient:
         fetch_limit: int = 100
     ) -> Dict[str, Any]:
         """
-        Execute SQL query and return results.
+        Execute SQL query with sandbox security checks.
+
+        M5: Adds security validation, row limits, and timeout controls.
 
         Args:
             sql: SQL query string
@@ -60,32 +64,74 @@ class DatabaseClient:
             - columns: list - column names
             - row_count: int - number of rows returned
             - error: str - error message if failed
+            - code: str - error code if blocked by sandbox (M5)
         """
         result = {
             "ok": False,
             "rows": [],
             "columns": [],
             "row_count": 0,
-            "error": None
+            "error": None,
+            "code": None  # M5: Security error code
         }
 
         if not sql or not sql.strip():
             result["error"] = "Empty SQL query"
+            result["code"] = "SANDBOX_EMPTY_SQL"
             return result
 
-        sql_upper = sql.strip().upper()
-        if not sql_upper.startswith("SELECT"):
-            result["error"] = "Only SELECT queries are allowed (read-only mode)"
-            return result
+        # M5: Get sandbox configuration
+        sandbox_config = config.get_sandbox_config()
+        
+        # M5: Security check if sandbox is enabled
+        if sandbox_config.get("enabled", True):
+            safety_check = check_sql_safety(
+                sql,
+                forbidden_keywords=sandbox_config.get("forbidden_keywords"),
+                max_rows=sandbox_config.get("max_rows")
+            )
+            
+            if not safety_check["ok"]:
+                # Log security event
+                log_security_event({
+                    "sql": sql,
+                    "code": safety_check["code"],
+                    "reason": safety_check["reason"],
+                    "action": "blocked"
+                })
+                
+                result["error"] = f"Blocked by sandbox: {safety_check['reason']}"
+                result["code"] = safety_check["code"]
+                return result
+
+        # M5: Apply row limits
+        max_rows = sandbox_config.get("max_rows", 1000)
+        default_limit = sandbox_config.get("default_limit", 200)
+        
+        # Apply LIMIT to SQL if needed
+        sql_with_limit, effective_limit = apply_row_limit(sql, max_rows, default_limit)
+        
+        # Ensure fetch_limit doesn't exceed max_rows
+        fetch_limit = min(fetch_limit, max_rows, effective_limit)
 
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
 
+            # M5: Set execution timeout (MySQL 5.7+)
+            max_execution_ms = sandbox_config.get("max_execution_ms", 3000)
+            if max_execution_ms > 0:
+                try:
+                    cursor.execute(f"SET SESSION max_execution_time = {max_execution_ms}")
+                except Exception:
+                    # Ignore if max_execution_time is not supported (older MySQL versions)
+                    pass
+
+            # Execute query with applied limits
             if params:
-                cursor.execute(sql, params)
+                cursor.execute(sql_with_limit, params)
             else:
-                cursor.execute(sql)
+                cursor.execute(sql_with_limit)
 
             raw_rows = cursor.fetchmany(fetch_limit)
 
@@ -104,7 +150,19 @@ class DatabaseClient:
             return result
 
         except pymysql.Error as e:
-            result["error"] = f"Database error: {str(e)}"
+            error_msg = str(e)
+            result["error"] = f"Database error: {error_msg}"
+            
+            # M5: Check if error is due to timeout
+            if "max_execution_time" in error_msg.lower() or "timeout" in error_msg.lower():
+                result["code"] = "SANDBOX_TIMEOUT"
+                log_security_event({
+                    "sql": sql_with_limit,
+                    "code": "SANDBOX_TIMEOUT",
+                    "reason": "Query exceeded maximum execution time",
+                    "action": "timeout"
+                })
+            
             return result
 
         except Exception as e:

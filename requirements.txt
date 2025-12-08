@@ -13,6 +13,8 @@ pyyaml>=6.0
 
 # Database (M2+)
 sqlalchemy>=2.0.0
+pymysql>=1.1.0  # MySQL driver
+cryptography>=41.0.0  # Required for MySQL 8.0+ authentication (M5+)
 # Will add specific DB drivers in M2
 
 # SQL Parsing and Validation (M4+)

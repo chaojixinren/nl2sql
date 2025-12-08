@@ -101,17 +101,17 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
     question = state.get("question", "")
     critique = state.get("critique")  # M4: Get critique if available
     regeneration_count = state.get("regeneration_count", 0)  # M4: Track retries
-    
+
     print(f"\n=== Generate SQL Node (M3/M4) ===")
     print(f"Question: {question}")
-    
+
     if critique:
         print(f"Regeneration attempt: {regeneration_count + 1}")
         print(f"Using critique feedback for improvement")
     
     # Load prompt template
     prompt_template = load_prompt_template("nl2sql")
-    
+
     # M3: 使用智能 schema（根据问题匹配相关表）
     real_schema = get_database_schema(question)
     
@@ -119,7 +119,7 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
     relevant_tables = schema_manager.find_relevant_tables(question)
     if relevant_tables:
         print(f"Relevant tables: {', '.join(relevant_tables)}")
-    
+
     # M4: If this is a regeneration, modify the prompt to include critique
     if critique:
         # Add critique section to prompt
@@ -143,25 +143,25 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
         )
     else:
         # Original prompt
-        prompt = prompt_template.format(
-            schema=real_schema,
-            question=question
-        )
-    
+    prompt = prompt_template.format(
+        schema=real_schema,
+        question=question
+    )
+
     try:
         # Call LLM
         response = llm_client.chat(prompt=prompt)
-        
+
         print(f"\nLLM Response:\n{response}")
-        
+
         # Extract SQL from response
         candidate_sql = extract_sql_from_response(response)
-        
+
         print(f"\nExtracted SQL:\n{candidate_sql}")
         
         # M4: Increment regeneration count if this is a retry
         new_regeneration_count = regeneration_count + 1 if critique else 0
-        
+
         return {
             **state,
             "candidate_sql": candidate_sql,
@@ -169,10 +169,10 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
             "regeneration_count": new_regeneration_count,  # M4: Track retries
             "critique": None  # Clear critique after using it
         }
-    
+
     except Exception as e:
         print(f"\n✗ Error generating SQL: {e}")
-        
+
         return {
             **state,
             "candidate_sql": None,

@@ -150,7 +150,7 @@ def build_graph() -> StateGraph:
     """
     # Create graph
     workflow = StateGraph(NL2SQLState)
-    
+
     # Add nodes
     workflow.add_node("parse_intent", parse_intent_node)
     workflow.add_node("log", log_node)
@@ -159,10 +159,10 @@ def build_graph() -> StateGraph:
     workflow.add_node("critique_sql", critique_sql_node)  # M4: New critique node
     workflow.add_node("execute_sql", execute_sql_node)
     workflow.add_node("echo", echo_node)
-    
+
     # Define edges
     workflow.set_entry_point("parse_intent")
-    workflow.add_edge("parse_intent", "log")
+    workflow.add_edge("parse_intent", "log") 
     workflow.add_edge("log", "generate_sql")
     
     # M4: New validation flow
@@ -185,10 +185,10 @@ def build_graph() -> StateGraph:
     # Original execution flow
     workflow.add_edge("execute_sql", "echo")
     workflow.add_edge("echo", END)
-    
+
     # Compile graph
     graph = workflow.compile()
-    
+
     return graph
 
 

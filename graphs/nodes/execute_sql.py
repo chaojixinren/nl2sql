@@ -1,6 +1,8 @@
 """
 SQL Execution Node for NL2SQL system.
 M2: Executes SQL queries against the database using Function Call.
+M4: Added SQL validation before execution.
+M5: Added sandbox safety checks and structured error handling.
 """
 import sys
 from pathlib import Path
@@ -19,11 +21,9 @@ from graphs.utils.performance import monitor_performance
 @monitor_performance
 def execute_sql_node(state: NL2SQLState) -> NL2SQLState:
     """
-    Execute SQL query against the database.
+    Execute SQL query against the database with sandbox security.
 
-    M2: Simple execution without retry or validation.
-    M4: Will add SQL validation before execution.
-    M5: Will add sandbox safety checks.
+    M5: Now includes sandbox safety checks and structured error reporting.
 
     Args:
         state: Current NL2SQL state
@@ -33,7 +33,7 @@ def execute_sql_node(state: NL2SQLState) -> NL2SQLState:
     """
     candidate_sql = state.get("candidate_sql")
 
-    print(f"\n=== Execute SQL Node ===")
+    print(f"\n=== Execute SQL Node (M5) ===")
     print(f"SQL: {candidate_sql}")
 
     # Check if SQL exists
@@ -44,6 +44,7 @@ def execute_sql_node(state: NL2SQLState) -> NL2SQLState:
             "execution_result": {
                 "ok": False,
                 "error": "No SQL query provided",
+                "code": "SANDBOX_EMPTY_SQL",
                 "rows": [],
                 "columns": [],
                 "row_count": 0
@@ -52,7 +53,7 @@ def execute_sql_node(state: NL2SQLState) -> NL2SQLState:
         }
 
     try:
-        # Execute SQL using database client
+        # Execute SQL using database client (with sandbox checks)
         result = db_client.query(candidate_sql)
 
         if result["ok"]:
@@ -68,7 +69,17 @@ def execute_sql_node(state: NL2SQLState) -> NL2SQLState:
                 if len(result['rows'][0]) > 5:
                     print(f"    ... ({len(result['rows'][0]) - 5} more columns)")
         else:
-            print(f"✗ Query failed: {result['error']}")
+            # M5: Enhanced error reporting
+            error_code = result.get("code", "UNKNOWN_ERROR")
+            error_msg = result.get("error", "Unknown error")
+            
+            print(f"✗ Query failed: {error_msg}")
+            
+            # M5: Show security error details if blocked by sandbox
+            if error_code and error_code.startswith("SANDBOX_"):
+                print(f"  Security Code: {error_code}")
+                print(f"  Reason: {error_msg}")
+                print(f"  ⚠️  This query was blocked by security sandbox")
 
         return {
             **state,
@@ -84,6 +95,7 @@ def execute_sql_node(state: NL2SQLState) -> NL2SQLState:
             "execution_result": {
                 "ok": False,
                 "error": str(e),
+                "code": "EXECUTION_ERROR",
                 "rows": [],
                 "columns": [],
                 "row_count": 0
