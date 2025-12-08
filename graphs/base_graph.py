@@ -16,6 +16,7 @@ from langgraph.graph import StateGraph, END
 from datetime import datetime
 import uuid
 import json
+from typing import TypedDict, Dict, Any, List, Optional
 
 # Set UTF-8 encoding for Windows console
 if sys.platform == 'win32':
@@ -26,6 +27,8 @@ if sys.platform == 'win32':
 from graphs.state import NL2SQLState
 from graphs.nodes.generate_sql import generate_sql_node
 from graphs.nodes.execute_sql import execute_sql_node
+from graphs.nodes.validate_sql import validate_sql_node, should_retry_sql  # M4
+from graphs.nodes.critique_sql import critique_sql_node  # M4
 
 def log_node(state: NL2SQLState) -> NL2SQLState:
     """
@@ -143,41 +146,56 @@ def build_graph() -> StateGraph:
     M0: Minimal graph with parse_intent -> echo
     M1: Added generate_sql node: parse_intent -> generate_sql -> echo
     M2: Added execute_sql node: parse_intent -> generate_sql -> execute_sql -> echo
+    M4: Added validation and self-healing: generate -> validate -> (fail) -> critique -> regenerate
     """
     # Create graph
     workflow = StateGraph(NL2SQLState)
-
+    
     # Add nodes
     workflow.add_node("parse_intent", parse_intent_node)
     workflow.add_node("log", log_node)
-    workflow.add_node("generate_sql", generate_sql_node)  # M1
-    workflow.add_node("execute_sql", execute_sql_node)    # M2: New node
+    workflow.add_node("generate_sql", generate_sql_node)
+    workflow.add_node("validate_sql", validate_sql_node)  # M4: New validation node
+    workflow.add_node("critique_sql", critique_sql_node)  # M4: New critique node
+    workflow.add_node("execute_sql", execute_sql_node)
     workflow.add_node("echo", echo_node)
-
+    
     # Define edges
     workflow.set_entry_point("parse_intent")
-    workflow.add_edge("parse_intent", "log") 
+    workflow.add_edge("parse_intent", "log")
     workflow.add_edge("log", "generate_sql")
-    workflow.add_edge("generate_sql", "execute_sql")  # M2: Route to SQL execution
+    
+    # M4: New validation flow
+    workflow.add_edge("generate_sql", "validate_sql")
+    
+    # M4: Conditional edge after validation
+    workflow.add_conditional_edges(
+        "validate_sql",
+        should_retry_sql,  # Decision function
+        {
+            "execute": "execute_sql",  # Validation passed, execute SQL
+            "retry": "critique_sql",    # Validation failed, critique and retry
+            "fail": "echo"              # Max retries exceeded, show error
+        }
+    )
+    
+    # M4: After critique, regenerate SQL
+    workflow.add_edge("critique_sql", "generate_sql")  # Loop back to generate
+    
+    # Original execution flow
     workflow.add_edge("execute_sql", "echo")
     workflow.add_edge("echo", END)
-
+    
     # Compile graph
     graph = workflow.compile()
-
+    
     return graph
 
 
 def run_query(question: str, session_id: str = None) -> NL2SQLState:
     """
     Run a single query through the graph.
-
-    Args:
-        question: Natural language question
-        session_id: Optional session identifier
-
-    Returns:
-        Final state after graph execution
+    M4: Now includes validation and self-healing.
     """
     if session_id is None:
         session_id = str(uuid.uuid4())
@@ -191,15 +209,21 @@ def run_query(question: str, session_id: str = None) -> NL2SQLState:
         "session_id": session_id,
         "timestamp": None,
         "intent": None,
-        "candidate_sql": None,        # M1
-        "sql_generated_at": None,     # M1
-        "execution_result": None,     # M2
-        "executed_at": None           # M2
+        "candidate_sql": None,
+        "sql_generated_at": None,
+        "execution_result": None,
+        "executed_at": None,
+        "validation_result": None,      # M4: New
+        "validation_errors": None,      # M4: New
+        "validation_passed": None,      # M4: New
+        "critique": None,               # M4: New
+        "regeneration_count": 0,        # M4: New
+        "max_regenerations": 3          # M4: New (default 3 retries)
     }
 
     # Run graph
     print(f"\n{'='*50}")
-    print(f"Starting NL2SQL Graph (M2 - Function Call DB)")
+    print(f"Starting NL2SQL Graph (M4 - SQL Guardrail)")
     print(f"{'='*50}")
 
     result = graph.invoke(initial_state)

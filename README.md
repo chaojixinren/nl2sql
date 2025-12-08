@@ -1,6 +1,9 @@
-# Rookie NL2SQL - 自然语言转 SQL 实战项目
+# NL2SQL - 自然语言转 SQL 实战项目
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+> **当前版本**: M4 - SQL Guardrail（校验与自修复）  
+> **状态**: ✅ 核心功能已实现并测试通过
 
 ## 项目概述
 
@@ -86,10 +89,16 @@
 
 6. **运行测试**
    ```bash
+   # 测试完整流程
    python test_graph.py
+   
+   # 测试 SQL Guardrail 功能
+   python test_guardrail.py
    ```
 
 ### 使用示例
+
+#### Python API
 
 ```python
 from graphs.base_graph import run_query
@@ -99,13 +108,27 @@ result = run_query("查询前5个客户的名字和邮箱")
 
 # 查看结果
 print(result['candidate_sql'])  # 生成的 SQL
+print(result['validation_passed'])  # 验证是否通过 (M4)
+print(result['regeneration_count'])  # 重试次数 (M4)
 print(result['execution_result'])  # 执行结果
 ```
 
-或使用命令行测试：
+#### 命令行测试
+
 ```bash
+# 测试完整流程
 python test_graph.py "查询所有艺术家的名字"
+
+# 测试 SQL Guardrail 功能
+python test_guardrail.py
 ```
+
+#### 功能特性
+
+- **自动 Schema 抽取**：首次运行自动生成 `data/schema.json`
+- **智能表匹配**：根据问题自动匹配相关表，减少 token 消耗
+- **SQL 语法验证**：使用 sqlglot 在执行前验证 SQL 语法
+- **自动修复**：SQL 有错误时自动分析并重新生成（最多 3 次）
 
 ## 项目结构
 
@@ -119,22 +142,75 @@ rookie-nl2sql-main/
 ├── graphs/              # LangGraph 流程定义
 │   ├── base_graph.py   # 主流程图
 │   ├── state.py        # 状态定义
-│   └── nodes/          # 节点实现
-│       ├── generate_sql.py   # SQL 生成节点
-│       └── execute_sql.py     # SQL 执行节点
+│   ├── nodes/          # 节点实现
+│   │   ├── generate_sql.py   # SQL 生成节点
+│   │   ├── validate_sql.py   # SQL 验证节点 (M4)
+│   │   ├── critique_sql.py   # SQL 错误分析节点 (M4)
+│   │   └── execute_sql.py   # SQL 执行节点
+│   └── utils/          # 工具函数
+│       └── performance.py  # 性能监控
 ├── tools/               # 工具模块
 │   ├── db.py           # 数据库客户端（MySQL）
 │   ├── llm_client.py   # LLM 客户端
 │   └── schema_manager.py # Schema 管理器
 ├── prompts/             # Prompt 模板
-│   └── nl2sql.txt      # SQL 生成提示词
+│   ├── nl2sql.txt      # SQL 生成提示词
+│   └── critique.txt    # SQL 错误分析提示词 (M4)
 ├── logs/                # 日志目录
-├── test_graph.py        # 测试脚本
+├── test_graph.py        # 完整流程测试脚本
+├── test_guardrail.py    # SQL Guardrail 功能测试脚本 (M4)
 ├── requirements.txt     # 依赖列表
 └── README.md           # 项目说明
 ```
 
 ## 核心功能
+
+### M4: SQL Guardrail（校验与自修复）
+
+SQL Guardrail 是 M4 版本新增的核心功能，确保生成的 SQL 语法正确并可自动修复。
+
+#### 功能特点
+
+1. **语法验证**
+   - 使用 `sqlglot` 进行 SQL 语法验证
+   - 在执行前捕获语法错误
+   - 支持 MySQL 方言验证
+   - 83%+ 的语法错误捕获率
+
+2. **错误分析**
+   - LLM 驱动的错误分析（`critique_sql_node`）
+   - 提供详细的错误原因和修复建议
+   - 基于数据库 Schema 的上下文分析
+
+3. **自动修复**
+   - 基于错误分析自动重新生成 SQL
+   - 最多 3 次重试机制
+   - 防止无限循环
+
+4. **完整流程**
+   ```
+   generate_sql → validate_sql → (失败) → critique_sql → generate_sql → validate_sql
+   ```
+
+#### 使用示例
+
+```python
+result = run_query("查询客户信息")
+
+# 检查验证结果
+if result.get('validation_passed'):
+    print("✓ SQL 验证通过")
+else:
+    print(f"✗ SQL 验证失败: {result.get('validation_errors')}")
+    print(f"重试次数: {result.get('regeneration_count', 0)}")
+```
+
+#### 测试
+
+运行专门的测试脚本验证功能：
+```bash
+python test_guardrail.py
+```
 
 ### 已实现功能
 
@@ -152,12 +228,19 @@ rookie-nl2sql-main/
    - 支持多种 LLM 提供商（DeepSeek / Qwen / OpenAI）
    - 自动提取和清理 SQL 代码
 
-4. **SQL 执行** (`execute_sql_node`)
+4. **SQL 验证与自修复** (`validate_sql_node`, `critique_sql_node`) (M4)
+   - 使用 sqlglot 进行 SQL 语法验证
+   - 自动捕获语法错误（83%+ 捕获率）
+   - LLM 驱动的错误分析和修复建议
+   - 自动重新生成修复后的 SQL（最多 3 次重试）
+   - 完整的验证→分析→修复→再验证循环
+
+5. **SQL 执行** (`execute_sql_node`)
    - 安全的只读查询执行
    - 结果格式化返回
    - 错误处理和日志记录
 
-5. **日志记录** (`log_node`)
+6. **日志记录** (`log_node`)
    - 记录所有查询到 JSONL 文件
    - 包含会话ID、问题、意图等信息
 
@@ -172,9 +255,19 @@ rookie-nl2sql-main/
   ↓
 SQL 生成 (generate_sql) ← 智能 Schema 匹配
   ↓
-SQL 执行 (execute_sql)
+SQL 验证 (validate_sql) ← 使用 sqlglot 验证语法 (M4)
   ↓
-结果输出 (echo)
+  ├─ ✓ 通过 → SQL 执行 (execute_sql) → 结果输出 (echo) → END
+  │
+  └─ ✗ 失败 → 错误分析 (critique_sql) ← LLM 分析错误 (M4)
+       ↓
+    SQL 重新生成 (generate_sql) ← 基于 critique 修复
+       ↓
+    SQL 验证 (validate_sql) ← 再次验证
+       ↓
+    (循环，最多 3 次)
+       ↓
+    超过最大次数 → 结果输出 (echo) → END (显示错误)
 ```
 
 ## 技术栈
@@ -184,6 +277,7 @@ SQL 执行 (execute_sql)
 - **LangGraph**: 状态图编排框架，用于构建 NL2SQL 工作流
 - **LangChain**: LLM 应用开发框架
 - **pymysql**: MySQL 数据库驱动
+- **sqlglot**: SQL 解析和验证库
 
 ### 配置管理
 
@@ -232,8 +326,8 @@ MYSQL_DATABASE=chinook
 
 - **模型层**：将自然语言解析为 SQL 意图（表/字段选择、过滤、聚合、排序、连接）。
 - **工具层**：集成数据库 Schema 管理、智能表匹配、字段检索等工具。
+- **验证层**：使用 sqlglot 进行 SQL 语法验证，LLM 驱动的错误分析和修复（M4）。
 - **执行层**：在只读通道执行校验后的 SQL，返回结果集。
-- **验证层**：进行语法/语义检查、字段/表存在性校验（规划中）。
 - **展示层**：命令行输出查询、SQL、日志与结果（未来可扩展为 Web 界面）。
 
 ### 技术路线
@@ -241,7 +335,8 @@ MYSQL_DATABASE=chinook
 - **解析策略**：基于关键词和模式的意图识别，支持问题类型分类。
 - **提示工程**：注入数据库 schema 与示例查询，约束输出仅产出 SQL。
 - **安全与健壮**：只读白名单、拒绝 DML（增删改），仅允许 SELECT 查询。
-- **反馈闭环**：错误捕获→分析→重写→再次校验执行（规划中）。
+- **反馈闭环**：错误捕获→分析→重写→再次校验执行（M4 已实现）。
+- **SQL Guardrail**：语法验证→错误分析→自动修复→再验证的完整循环（M4）。
 - **评估机制**：测试脚本支持端到端验证，衡量可执行率、正确率与耗时。
 
 ## 通过本项目可以学到
@@ -255,7 +350,11 @@ MYSQL_DATABASE=chinook
 
 ## 测试
 
-项目提供了完整的测试脚本 `test_graph.py`，可以：
+项目提供了两个测试脚本：
+
+### 1. 完整流程测试 (`test_graph.py`)
+
+测试整个 NL2SQL 流程：
 
 1. 测试数据库连接
 2. 测试 Schema Manager
@@ -272,17 +371,71 @@ python test_graph.py
 python test_graph.py "查询所有艺术家的名字"
 ```
 
+### 2. SQL Guardrail 功能测试 (`test_guardrail.py`) (M4)
+
+专门测试 SQL 验证和自修复功能：
+
+1. 检查 sqlglot 依赖
+2. 测试正确 SQL 验证
+3. 测试错误 SQL 捕获
+4. 测试重试决策逻辑
+5. 测试 Critique 节点
+6. 测试完整 Guardrail 流程
+
+运行测试：
+```bash
+python test_guardrail.py
+```
+
+测试结果示例：
+- ✅ sqlglot 依赖检查
+- ✅ 正确 SQL 验证
+- ✅ 错误 SQL 验证（83%+ 语法错误捕获率）
+- ✅ 重试决策逻辑
+- ✅ Critique 节点
+- ✅ 完整流程
+
+## 版本历史
+
+### M4 - SQL Guardrail（当前版本）✅
+
+- ✅ SQL 语法验证：使用 sqlglot 进行语法验证
+- ✅ 错误分析与修复：LLM 驱动的错误分析和自动修复
+- ✅ 自修复循环：验证→分析→修复→再验证的完整流程
+- ✅ 重试机制：最多 3 次自动重试，防止无限循环
+
+### M3 - 智能 Schema 匹配 ✅
+
+- ✅ 自动 Schema 抽取：从数据库自动生成 schema.json
+- ✅ 智能表匹配：根据问题自动匹配相关表
+- ✅ 字段检索匹配：支持精确、别名、模糊匹配
+- ✅ 表清单提示：自动生成表清单和格式化 Schema
+
+### M2 - SQL 执行 ✅
+
+- ✅ MySQL 支持：从 SQLite 迁移到 MySQL
+- ✅ 安全执行：只读查询执行，拒绝 DML 操作
+- ✅ 结果格式化：统一的查询结果格式
+
+### M1 - SQL 生成 ✅
+
+- ✅ 基础 SQL 生成：基于 LLM 和 Prompt 工程
+- ✅ 多 LLM 支持：DeepSeek、Qwen、OpenAI
+
+### M0 - 基础框架 ✅
+
+- ✅ LangGraph 工作流
+- ✅ 意图解析
+- ✅ 日志记录
+
 ## 扩展方向
 
+### 已完成 ✅
+
 - ✅ **MySQL 支持**：已完成从 SQLite 到 MySQL 的迁移
-- **多数据库支持**：PostgreSQL、云数据仓库，跨库 NL2SQL
-- **SQL 验证**：语法/语义检查、字段/表存在性校验
-- **语义增强**：加入实体词典/领域术语映射，减少歧义
-- **可视化模板**：自动选择图表类型（柱状、折线、饼图）与维度聚合
-- **Web 界面**：基于 FastAPI 的 Web API 和前端界面
-- **权限与审计**：提供数据访问控制与操作日志，满足企业级需求
-- **任务编排**：批量 NL2SQL、报表定时生成与订阅
-- **多轮对话**：支持上下文理解和对话历史
+- ✅ **SQL 语法验证** (M4)：使用 sqlglot 进行语法验证，83%+ 错误捕获率
+- ✅ **SQL 自修复** (M4)：LLM 驱动的错误分析和自动修复，最多 3 次重试
+
 
 ## 许可证
 

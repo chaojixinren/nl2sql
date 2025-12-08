@@ -42,3 +42,13 @@ class NL2SQLState(TypedDict):
     
     # 对话历史（M7 需要）
     dialog_history: Optional[List[Dict]]
+
+    # SQL Validation (M4)
+    validation_result: Optional[Dict[str, Any]]  # 验证结果
+    validation_errors: Optional[List[str]]  # 验证错误列表
+    validation_passed: Optional[bool]  # 是否通过验证
+    
+    # SQL Critique and Regeneration (M4)
+    critique: Optional[str]  # 错误分析和修复建议
+    regeneration_count: Optional[int]  # 重新生成次数（防止无限循环）
+    max_regenerations: Optional[int]  # 最大重新生成次数（默认3次）
