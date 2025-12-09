@@ -1,6 +1,6 @@
 {
   "database_type": "mysql",
-  "generated_at": "2025-12-07T16:15:51.296649",
+  "generated_at": "2025-12-09T17:05:58.872204",
   "tables": [
     {
       "name": "album",
@@ -14,8 +14,8 @@
           "description": "",
           "aliases": [
             "albumid",
-            "专辑编号",
-            "album_id"
+            "album_id",
+            "专辑编号"
           ],
           "sample_values": [
             1,
@@ -47,8 +47,8 @@
           "description": "",
           "aliases": [
             "artistid",
-            "艺术家编号",
-            "artist_id"
+            "artist_id",
+            "艺术家编号"
           ],
           "sample_values": [
             1,
@@ -72,8 +72,8 @@
           "description": "",
           "aliases": [
             "artistid",
-            "艺术家编号",
-            "artist_id"
+            "artist_id",
+            "艺术家编号"
           ],
           "sample_values": [
             1,
@@ -112,9 +112,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "customer_id",
+            "customerid",
             "客户编号",
-            "customerid"
+            "customer_id"
           ],
           "sample_values": [
             1,
@@ -129,9 +129,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "first_name",
+            "名名称",
             "firstname",
-            "名名称"
+            "first_name"
           ],
           "sample_values": [
             "Luís",
@@ -146,9 +146,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "last_name",
             "姓名称",
-            "lastname"
+            "lastname",
+            "last_name"
           ],
           "sample_values": [
             "Gonçalves",
@@ -163,8 +163,8 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "公司",
-            "company"
+            "company",
+            "公司"
           ],
           "sample_values": [
             "Embraer - Empresa Brasileira de Aeronáutica S.A.",
@@ -179,8 +179,8 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "地址",
-            "address"
+            "address",
+            "地址"
           ],
           "sample_values": [
             "Av. Brigadeiro Faria Lima, 2170",
@@ -211,8 +211,8 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "state",
-            "州"
+            "州",
+            "state"
           ],
           "sample_values": [
             "SP",
@@ -244,8 +244,8 @@
           "description": "",
           "aliases": [
             "postal_code",
-            "postalcode",
-            "邮编代码"
+            "邮编代码",
+            "postalcode"
           ],
           "sample_values": [
             "12227-000",
@@ -260,8 +260,8 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "电话",
-            "phone"
+            "phone",
+            "电话"
           ],
           "sample_values": [
             "+55 (12) 3923-5555",
@@ -292,8 +292,8 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "邮箱",
-            "email"
+            "email",
+            "邮箱"
           ],
           "sample_values": [
             "luisg@embraer.com.br",
@@ -308,9 +308,9 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "supportrepid",
             "support_rep_id",
-            "客服代表编号"
+            "客服代表编号",
+            "supportrepid"
           ],
           "sample_values": [
             3,
@@ -350,9 +350,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "last_name",
             "姓名称",
-            "lastname"
+            "lastname",
+            "last_name"
           ],
           "sample_values": [
             "Adams",
@@ -367,9 +367,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "first_name",
+            "名名称",
             "firstname",
-            "名名称"
+            "first_name"
           ],
           "sample_values": [
             "Andrew",
@@ -400,8 +400,8 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "汇报to",
             "reportsto",
+            "汇报to",
             "reports_to"
           ],
           "sample_values": [
@@ -434,9 +434,9 @@
           "not_null": false,
           "description": "",
           "aliases": [
+            "入职日期",
             "hiredate",
-            "hire_date",
-            "入职日期"
+            "hire_date"
           ],
           "sample_values": [
             "2002-08-14 00:00:00",
@@ -451,8 +451,8 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "地址",
-            "address"
+            "address",
+            "地址"
           ],
           "sample_values": [
             "11120 Jasper Ave NW",
@@ -483,8 +483,8 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "state",
-            "州"
+            "州",
+            "state"
           ],
           "sample_values": [
             "AB"
@@ -512,8 +512,8 @@
           "description": "",
           "aliases": [
             "postal_code",
-            "postalcode",
-            "邮编代码"
+            "邮编代码",
+            "postalcode"
           ],
           "sample_values": [
             "T5K 2N1",
@@ -528,8 +528,8 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "电话",
-            "phone"
+            "phone",
+            "电话"
           ],
           "sample_values": [
             "+1 (780) 428-9482",
@@ -560,8 +560,8 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "邮箱",
-            "email"
+            "email",
+            "邮箱"
           ],
           "sample_values": [
             "andrew@chinookcorp.com",
@@ -584,9 +584,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "流派编号",
             "genre_id",
-            "genreid"
+            "genreid",
+            "流派编号"
           ],
           "sample_values": [
             1,
@@ -625,9 +625,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
+            "发票编号",
             "invoice_id",
-            "invoiceid",
-            "发票编号"
+            "invoiceid"
           ],
           "sample_values": [
             1,
@@ -642,9 +642,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "customer_id",
+            "customerid",
             "客户编号",
-            "customerid"
+            "customer_id"
           ],
           "sample_values": [
             2,
@@ -659,9 +659,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "发票日期",
+            "invoice_date",
             "invoicedate",
-            "invoice_date"
+            "发票日期"
           ],
           "sample_values": [
             "2021-01-01 00:00:00",
@@ -676,8 +676,8 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "billing_address",
             "账单地址",
+            "billing_address",
             "billingaddress"
           ],
           "sample_values": [
@@ -693,9 +693,9 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "账单城市",
+            "billing_city",
             "billingcity",
-            "billing_city"
+            "账单城市"
           ],
           "sample_values": [
             "Stuttgart",
@@ -727,8 +727,8 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "billingcountry",
             "账单国家",
+            "billingcountry",
             "billing_country"
           ],
           "sample_values": [
@@ -745,8 +745,8 @@
           "description": "",
           "aliases": [
             "billing_postal_code",
-            "账单邮编代码",
-            "billingpostalcode"
+            "billingpostalcode",
+            "账单邮编代码"
           ],
           "sample_values": [
             "70174",
@@ -785,9 +785,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "invoicelineid",
             "发票line编号",
-            "invoice_line_id"
+            "invoice_line_id",
+            "invoicelineid"
           ],
           "sample_values": [
             1,
@@ -802,9 +802,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
+            "发票编号",
             "invoice_id",
-            "invoiceid",
-            "发票编号"
+            "invoiceid"
           ],
           "sample_values": [
             1,
@@ -819,9 +819,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "曲目编号",
+            "track_id",
             "trackid",
-            "track_id"
+            "曲目编号"
           ],
           "sample_values": [
             2,
@@ -915,9 +915,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
+            "playlistid",
             "playlist_id",
-            "播放列表编号",
-            "playlistid"
+            "播放列表编号"
           ],
           "sample_values": [
             1,
@@ -956,9 +956,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
+            "playlistid",
             "playlist_id",
-            "播放列表编号",
-            "playlistid"
+            "播放列表编号"
           ],
           "sample_values": [
             1,
@@ -973,9 +973,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "曲目编号",
+            "track_id",
             "trackid",
-            "track_id"
+            "曲目编号"
           ],
           "sample_values": [
             1,
@@ -998,9 +998,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "曲目编号",
+            "track_id",
             "trackid",
-            "track_id"
+            "曲目编号"
           ],
           "sample_values": [
             1,
@@ -1032,8 +1032,8 @@
           "description": "",
           "aliases": [
             "albumid",
-            "专辑编号",
-            "album_id"
+            "album_id",
+            "专辑编号"
           ],
           "sample_values": [
             1,
@@ -1065,9 +1065,9 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "流派编号",
             "genre_id",
-            "genreid"
+            "genreid",
+            "流派编号"
           ],
           "sample_values": [
             1,
@@ -1098,8 +1098,8 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "毫秒",
-            "milliseconds"
+            "milliseconds",
+            "毫秒"
           ],
           "sample_values": [
             343719,
