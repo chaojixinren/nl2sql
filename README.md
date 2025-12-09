@@ -2,8 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **当前版本**: M5 - SQL Sandbox（安全与沙箱）  
-> **状态**: ✅ 核心功能已实现并测试通过
+> **当前版本**: M7 - Dialog Clarification（澄清与消歧）  
+> **状态**: ✅ 核心功能已实现并测试通过  
+> **说明**: M6 阶段（RAG增强）暂时跳过，直接进入M7阶段
 
 ## 项目概述
 
@@ -97,34 +98,12 @@
    
    # 测试 SQL Sandbox 功能 (M5)
    python test_sandbox.py
+   
+   # 测试 Dialog Clarification 功能 (M7)
+   python test_clarify.py
    ```
 
-### 使用示例
 
-#### Python API
-
-```python
-from graphs.base_graph import run_query
-
-# 运行一个自然语言查询
-result = run_query("查询前5个客户的名字和邮箱")
-
-# 查看结果
-print(result['candidate_sql'])  # 生成的 SQL
-print(result['validation_passed'])  # 验证是否通过 (M4)
-print(result['regeneration_count'])  # 重试次数 (M4)
-print(result['execution_result'])  # 执行结果
-```
-
-#### 命令行测试
-
-```bash
-# 测试完整流程
-python test_graph.py "查询所有艺术家的名字"
-
-# 测试 SQL Guardrail 功能
-python test_guardrail.py
-```
 
 #### 功能特性
 
@@ -132,6 +111,7 @@ python test_guardrail.py
 - **智能表匹配**：根据问题自动匹配相关表，减少 token 消耗
 - **SQL 语法验证**：使用 sqlglot 在执行前验证 SQL 语法
 - **自动修复**：SQL 有错误时自动分析并重新生成（最多 3 次）
+- **多轮对话澄清** ：自动识别模糊问题，生成封闭式澄清问句，支持多轮交互
 
 ## 项目结构
 
@@ -149,6 +129,7 @@ rookie-nl2sql-main/
 │   │   ├── generate_sql.py   # SQL 生成节点
 │   │   ├── validate_sql.py   # SQL 验证节点 (M4)
 │   │   ├── critique_sql.py   # SQL 错误分析节点 (M4)
+│   │   ├── clarify.py        # 澄清与消歧节点 (M7)
 │   │   └── execute_sql.py   # SQL 执行节点
 │   └── utils/          # 工具函数
 │       └── performance.py  # 性能监控
@@ -159,54 +140,19 @@ rookie-nl2sql-main/
 │   └── sandbox.py      # SQL 沙箱安全模块 (M5)
 ├── prompts/             # Prompt 模板
 │   ├── nl2sql.txt      # SQL 生成提示词
-│   └── critique.txt    # SQL 错误分析提示词 (M4)
+│   ├── critique.txt    # SQL 错误分析提示词 (M4)
+│   └── clarify.txt     # 澄清问题生成提示词 (M7)
 ├── logs/                # 日志目录
 ├── test_graph.py        # 完整流程测试脚本
 ├── test_guardrail.py    # SQL Guardrail 功能测试脚本 (M4)
 ├── test_sandbox.py      # SQL Sandbox 功能测试脚本 (M5)
+├── test_clarify.py      # Dialog Clarification 功能测试脚本 (M7)
 ├── requirements.txt     # 依赖列表
 └── README.md           # 项目说明
 ```
 
 
-### 已实现功能
 
-1. **意图解析** (`parse_intent_node`)
-   - 识别问题类型（聚合、排名、查询等）
-   - 提取数量限制、时间范围等关键信息
-
-2. **智能 Schema 匹配** (`schema_manager`)
-   - 根据问题自动匹配相关表
-   - 支持字段别名和模糊匹配
-   - 生成优化的 Schema 提示
-
-3. **SQL 生成** (`generate_sql_node`)
-   - 基于 LLM 和 Schema 生成 SQL
-   - 支持多种 LLM 提供商（DeepSeek / Qwen / OpenAI）
-   - 自动提取和清理 SQL 代码
-
-4. **SQL 验证与自修复** (`validate_sql_node`, `critique_sql_node`) (M4)
-   - 使用 sqlglot 进行 SQL 语法验证
-   - 自动捕获语法错误（83%+ 捕获率）
-   - LLM 驱动的错误分析和修复建议
-   - 自动重新生成修复后的 SQL（最多 3 次重试）
-   - 完整的验证→分析→修复→再验证循环
-
-5. **SQL 执行与沙箱安全** (`execute_sql_node`, `sandbox`) (M5)
-   - 安全的只读查询执行
-   - SQL 安全检查：拦截危险关键字和模式
-   - 行数限制：自动添加 LIMIT，防止大量数据返回
-   - 执行超时：设置最大执行时间，防止长时间查询
-   - 安全日志：记录所有被拦截的 SQL 和原因
-   - 结构化错误：返回详细的错误代码和原因
-
-6. **SQL 执行** (`execute_sql_node`)
-   - 结果格式化返回
-   - 错误处理和日志记录
-
-6. **日志记录** (`log_node`)
-   - 记录所有查询到 JSONL 文件
-   - 包含会话ID、问题、意图等信息
 
 ### 工作流程
 
@@ -219,19 +165,25 @@ rookie-nl2sql-main/
   ↓
 SQL 生成 (generate_sql) ← 智能 Schema 匹配
   ↓
-SQL 验证 (validate_sql) ← 使用 sqlglot 验证语法 (M4)
+澄清判断 (clarify) ← M7: 判断是否需要澄清
   ↓
-  ├─ ✓ 通过 → SQL 执行 (execute_sql) → 结果输出 (echo) → END
+  ├─ 需要澄清 → 生成澄清问题 → 输出给用户 → 等待回答
   │
-  └─ ✗ 失败 → 错误分析 (critique_sql) ← LLM 分析错误 (M4)
+  ├─ 用户已回答 → 更新问题 → 重新生成SQL (generate_sql)
+  │
+  └─ 不需要澄清 → SQL 验证 (validate_sql) ← 使用 sqlglot 验证语法 (M4)
        ↓
-    SQL 重新生成 (generate_sql) ← 基于 critique 修复
-       ↓
-    SQL 验证 (validate_sql) ← 再次验证
-       ↓
-    (循环，最多 3 次)
-       ↓
-    超过最大次数 → 结果输出 (echo) → END (显示错误)
+    ├─ ✓ 通过 → SQL 执行 (execute_sql) → 结果输出 (echo) → END
+    │
+    └─ ✗ 失败 → 错误分析 (critique_sql) ← LLM 分析错误 (M4)
+         ↓
+      SQL 重新生成 (generate_sql) ← 基于 critique 修复
+         ↓
+      SQL 验证 (validate_sql) ← 再次验证
+         ↓
+      (循环，最多 3 次)
+         ↓
+      超过最大次数 → 结果输出 (echo) → END (显示错误)
 ```
 
 ## 技术栈
@@ -258,31 +210,7 @@ SQL 验证 (validate_sql) ← 使用 sqlglot 验证语法 (M4)
 - **Qwen (通义千问)**: 支持阿里云 Qwen API
 - **OpenAI**: 支持 OpenAI API（兼容其他 OpenAI 兼容服务）
 
-## 配置说明
 
-### 环境变量配置
-
-主要配置项在 `.env` 文件中：
-
-```env
-# LLM 提供商选择
-LLM_PROVIDER=qwen  # deepseek / qwen / openai
-
-# 数据库配置
-DB_TYPE=mysql
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_USER=root
-MYSQL_PASSWORD=your_password
-MYSQL_DATABASE=chinook
-```
-
-### YAML 配置
-
-`configs/dev.yaml` 包含开发环境的详细配置，包括：
-- LLM 模型和参数
-- 数据库连接参数
-- 系统行为配置
 
 ## 如何实现
 
@@ -302,6 +230,7 @@ MYSQL_DATABASE=chinook
 - **反馈闭环**：错误捕获→分析→重写→再次校验执行（M4 已实现）。
 - **SQL Guardrail**：语法验证→错误分析→自动修复→再验证的完整循环（M4）。
 - **SQL Sandbox**：危险关键字拦截、行数限制、执行超时、安全日志（M5）。
+- **Dialog Clarification**：模糊问题识别→生成澄清问句→多轮对话→问题整合（M7）。
 - **评估机制**：测试脚本支持端到端验证，衡量可执行率、正确率与耗时。
 
 ## 通过本项目可以学到
@@ -313,70 +242,22 @@ MYSQL_DATABASE=chinook
 - **错误处理与鲁棒性**：语法错误、字段缺失、歧义查询的处理策略与交互设计。
 - **评估与度量**：测试用例构建、指标设计、不同提示策略的效果对比。
 
-## 测试
-
-项目提供了两个测试脚本：
-
-### 1. 完整流程测试 (`test_graph.py`)
-
-测试整个 NL2SQL 流程：
-
-1. 测试数据库连接
-2. 测试 Schema Manager
-3. 测试 LLM 客户端
-4. 测试完整 Graph 流程
-
-运行测试：
-```bash
-python test_graph.py
-```
-
-使用自定义问题测试：
-```bash
-python test_graph.py "查询所有艺术家的名字"
-```
-
-### 2. SQL Guardrail 功能测试 (`test_guardrail.py`) (M4)
-
-专门测试 SQL 验证和自修复功能：
-
-1. 检查 sqlglot 依赖
-2. 测试正确 SQL 验证
-3. 测试错误 SQL 捕获
-4. 测试重试决策逻辑
-5. 测试 Critique 节点
-6. 测试完整 Guardrail 流程
-
-运行测试：
-```bash
-python test_guardrail.py
-```
-
-### 3. SQL Sandbox 功能测试 (`test_sandbox.py`) (M5)
-
-专门测试 SQL 安全防护功能：
-
-1. 检查沙箱配置
-2. 测试 SQL 安全检查（拦截恶意 SQL）
-3. 测试行数限制
-4. 测试数据库集成
-5. 测试安全日志记录
-
-运行测试：
-```bash
-python test_sandbox.py
-```
-
-测试结果示例：
-- ✅ 沙箱配置加载
-- ✅ SQL 安全检查（拦截 DROP, DELETE, UPDATE 等）
-- ✅ 行数限制（自动添加 LIMIT）
-- ✅ 数据库集成（恶意 SQL 被正确拦截）
-- ✅ 安全日志记录
-
 ## 版本历史
 
-### M5 - SQL Sandbox（当前版本）✅
+### M7 - Dialog Clarification（当前版本）✅
+
+- ✅ 澄清判据：自动识别模糊问题（时间范围、聚合方式、字段需求、歧义词汇）
+- ✅ 生成澄清问句：LLM 生成封闭式澄清问题，提供3-5个选项
+- ✅ 多轮对话：支持最多3轮澄清，维护完整对话历史
+- ✅ 问题整合：自动将用户回答整合到原问题中
+- ✅ 状态管理：使用 `dialog_history` 和 `user_id` 维护对话上下文
+- ✅ 智能路由：根据澄清状态自动路由到不同处理流程
+
+### M6 - RAG 增强 ⏸️
+
+- ⏸️ **暂时跳过**：M6 阶段（RAG增强）暂时跳过，直接进入M7阶段
+
+### M5 - SQL Sandbox ✅
 
 - ✅ SQL 安全检查：拦截危险关键字（DROP, DELETE, UPDATE 等）
 - ✅ 行数限制：自动添加 LIMIT，防止大量数据返回
@@ -424,6 +305,13 @@ python test_sandbox.py
 - ✅ **SQL 语法验证** (M4)：使用 sqlglot 进行语法验证，83%+ 错误捕获率
 - ✅ **SQL 自修复** (M4)：LLM 驱动的错误分析和自动修复，最多 3 次重试
 - ✅ **SQL 安全沙箱** (M5)：危险关键字拦截、行数限制、执行超时、安全日志
+- ✅ **多轮对话澄清** (M7)：自动识别模糊问题，生成封闭式澄清问句，支持多轮交互
+
+### 计划中 📋
+
+- 📋 **RAG 增强** (M6)：使用 RAG 技术增强 SQL 生成准确性（暂时跳过）
+- 📋 **结果可视化** (M8)：查询结果的可视化展示
+- 📋 **答案生成** (M9)：将 SQL 结果转换为自然语言答案
 
 
 ## 许可证

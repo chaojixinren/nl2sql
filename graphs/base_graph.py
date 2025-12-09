@@ -29,6 +29,7 @@ from graphs.nodes.generate_sql import generate_sql_node
 from graphs.nodes.execute_sql import execute_sql_node
 from graphs.nodes.validate_sql import validate_sql_node, should_retry_sql  # M4
 from graphs.nodes.critique_sql import critique_sql_node  # M4
+from graphs.nodes.clarify import clarify_node, should_ask_clarification  # M7
 
 def log_node(state: NL2SQLState) -> NL2SQLState:
     """
@@ -108,11 +109,33 @@ def echo_node(state: NL2SQLState) -> NL2SQLState:
     M0: Simple output verification.
     M1: Also shows generated SQL.
     M2: Also shows execution results.
+    M7: Also shows clarification questions if needed.
     """
     print(f"\n=== Echo Node ===")
     print(f"Session ID: {state.get('session_id')}")
+    if state.get('user_id'):
+        print(f"User ID: {state.get('user_id')}")
     print(f"Question: {state.get('question')}")
     print(f"Intent: {json.dumps(state.get('intent', {}), indent=2, ensure_ascii=False)}")
+
+    # M7: Show clarification question if needed
+    if state.get('needs_clarification') and state.get('clarification_question'):
+        print(f"\n{'='*50}")
+        print("⚠️  需要澄清问题")
+        print(f"{'='*50}")
+        print(f"澄清问题: {state.get('clarification_question')}")
+        if state.get('clarification_options'):
+            print("\n选项:")
+            for i, opt in enumerate(state.get('clarification_options', []), 1):
+                print(f"  {i}. {opt}")
+        print(f"{'='*50}\n")
+        
+        # M7: 显示对话历史摘要
+        dialog_history = state.get('dialog_history', [])
+        if dialog_history:
+            print(f"对话历史 ({len(dialog_history)} 条消息)\n")
+        
+        return state  # 返回状态，等待用户回答
 
     # M1: Show generated SQL
     candidate_sql = state.get('candidate_sql')
@@ -134,6 +157,11 @@ def echo_node(state: NL2SQLState) -> NL2SQLState:
         else:
             print(f"  ✗ Failed: {execution_result.get('error')}")
 
+    # M7: Show dialog history if exists
+    dialog_history = state.get('dialog_history', [])
+    if dialog_history:
+        print(f"\n对话历史 ({len(dialog_history)} 条消息)")
+
     print(f"Timestamp: {state.get('timestamp')}")
     print(f"\n{'='*50}\n")
 
@@ -147,6 +175,7 @@ def build_graph() -> StateGraph:
     M1: Added generate_sql node: parse_intent -> generate_sql -> echo
     M2: Added execute_sql node: parse_intent -> generate_sql -> execute_sql -> echo
     M4: Added validation and self-healing: generate -> validate -> (fail) -> critique -> regenerate
+    M7: Added clarification node: generate_sql -> clarify -> (clarify/continue) -> validate_sql
     """
     # Create graph
     workflow = StateGraph(NL2SQLState)
@@ -155,6 +184,7 @@ def build_graph() -> StateGraph:
     workflow.add_node("parse_intent", parse_intent_node)
     workflow.add_node("log", log_node)
     workflow.add_node("generate_sql", generate_sql_node)
+    workflow.add_node("clarify", clarify_node)  # M7: New clarification node
     workflow.add_node("validate_sql", validate_sql_node)  # M4: New validation node
     workflow.add_node("critique_sql", critique_sql_node)  # M4: New critique node
     workflow.add_node("execute_sql", execute_sql_node)
@@ -165,8 +195,19 @@ def build_graph() -> StateGraph:
     workflow.add_edge("parse_intent", "log") 
     workflow.add_edge("log", "generate_sql")
     
-    # M4: New validation flow
-    workflow.add_edge("generate_sql", "validate_sql")
+    # M7: After generating SQL, check if clarification is needed
+    workflow.add_edge("generate_sql", "clarify")
+    
+    # M7: Conditional edge after clarification
+    workflow.add_conditional_edges(
+        "clarify",
+        should_ask_clarification,  # Decision function
+        {
+            "clarify": "echo",  # Need clarification, return to user (via echo)
+            "regenerate": "generate_sql",  # User answered, regenerate SQL with updated question
+            "continue": "validate_sql"  # No clarification needed, continue
+        }
+    )
     
     # M4: Conditional edge after validation
     workflow.add_conditional_edges(
@@ -192,10 +233,11 @@ def build_graph() -> StateGraph:
     return graph
 
 
-def run_query(question: str, session_id: str = None) -> NL2SQLState:
+def run_query(question: str, session_id: str = None, user_id: str = None, clarification_answer: str = None) -> NL2SQLState:
     """
     Run a single query through the graph.
     M4: Now includes validation and self-healing.
+    M7: Now supports clarification answers and user_id.
     """
     if session_id is None:
         session_id = str(uuid.uuid4())
@@ -213,17 +255,28 @@ def run_query(question: str, session_id: str = None) -> NL2SQLState:
         "sql_generated_at": None,
         "execution_result": None,
         "executed_at": None,
-        "validation_result": None,      # M4: New
-        "validation_errors": None,      # M4: New
-        "validation_passed": None,      # M4: New
-        "critique": None,               # M4: New
-        "regeneration_count": 0,        # M4: New
-        "max_regenerations": 3          # M4: New (default 3 retries)
+        "validation_result": None,      # M4
+        "validation_errors": None,      # M4
+        "validation_passed": None,      # M4
+        "critique": None,               # M4
+        "regeneration_count": 0,        # M4
+        "max_regenerations": 3,         # M4
+        # M7: Use existing fields
+        "user_id": user_id,  
+        "dialog_history": [],  
+        # M7: Clarification fields
+        "needs_clarification": None,
+        "clarification_question": None,
+        "clarification_options": None,
+        "clarification_answer": clarification_answer,  # M7: User's answer
+        "clarification_count": 0,
+        "max_clarifications": 3,
+        "normalized_question": None
     }
 
     # Run graph
     print(f"\n{'='*50}")
-    print(f"Starting NL2SQL Graph (M4 - SQL Guardrail)")
+    print(f"Starting NL2SQL Graph (M7 - Dialog Clarification)")
     print(f"{'='*50}")
 
     result = graph.invoke(initial_state)
