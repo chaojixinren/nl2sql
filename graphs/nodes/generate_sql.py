@@ -2,6 +2,7 @@
 SQL Generation Node for NL2SQL system.
 M1: Uses prompt engineering to generate SQL from natural language.
 M3: Enhanced with smart schema matching.
+M8: Enhanced with multi-table JOIN path generation.
 """
 import sys
 from pathlib import Path
@@ -97,12 +98,13 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
     Generate SQL from natural language question using LLM.
     M3: Now uses smart schema matching based on question.
     M4: Supports regeneration with critique feedback.
+    M8: Enhanced with multi-table JOIN path generation.
     """
     question = state.get("question", "")
     critique = state.get("critique")  # M4: Get critique if available
     regeneration_count = state.get("regeneration_count", 0)  # M4: Track retries
 
-    print(f"\n=== Generate SQL Node (M3/M4) ===")
+    print(f"\n=== Generate SQL Node (M3/M4/M8) ===")
     print(f"Question: {question}")
 
     if critique:
@@ -119,6 +121,20 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
     relevant_tables = schema_manager.find_relevant_tables(question)
     if relevant_tables:
         print(f"Relevant tables: {', '.join(relevant_tables)}")
+    
+    # M8: 检测多表查询并生成JOIN路径建议
+    join_suggestions = ""
+    if relevant_tables and len(relevant_tables) >= 2:
+        print(f"M8: Detected multi-table query ({len(relevant_tables)} tables)")
+        join_suggestions = schema_manager.format_join_suggestions(relevant_tables)
+        if join_suggestions:
+            print("M8: Generated JOIN path suggestions")
+            # 打印JOIN路径摘要
+            join_steps = schema_manager.find_join_path(relevant_tables)
+            if join_steps:
+                print(f"  JOIN steps: {len(join_steps)}")
+                for i, step in enumerate(join_steps, 1):
+                    print(f"    {i}. {step['join_type']} JOIN {step['join_table']} ON {step['condition']}")
 
     # M4: If this is a regeneration, modify the prompt to include critique
     if critique:
@@ -137,16 +153,33 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
 2. 表名和字段名与 Schema 完全匹配（区分大小写）
 3. 修复所有报告的错误
 """
+        # M8: Add JOIN suggestions if available
+        if join_suggestions:
+            prompt_with_critique = f"""{prompt_with_critique}
+
+{join_suggestions}
+"""
         prompt = prompt_with_critique.format(
             schema=real_schema,
             question=question
         )
     else:
-        # Original prompt
-        prompt = prompt_template.format(
-            schema=real_schema,
-            question=question
-        )
+        # Original prompt with M8 JOIN suggestions
+        if join_suggestions:
+            # Insert JOIN suggestions before the user question
+            prompt_template_with_join = prompt_template.replace(
+                "## 用户问题",
+                f"{join_suggestions}\n\n## 用户问题"
+            )
+            prompt = prompt_template_with_join.format(
+                schema=real_schema,
+                question=question
+            )
+        else:
+            prompt = prompt_template.format(
+                schema=real_schema,
+                question=question
+            )
 
     try:
         # Call LLM

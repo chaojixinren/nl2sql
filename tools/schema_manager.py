@@ -117,8 +117,13 @@ class SchemaManager:
         return schema
     
     def _get_foreign_keys(self, table_name: str) -> List[Dict]:
-        """获取表的外键信息 (MySQL)"""
+        """
+        获取表的外键信息 (MySQL)
+        M8: 如果数据库没有定义外键约束，则基于字段名模式推断外键关系
+        """
         foreign_keys = []
+        
+        # 方法1: 从数据库INFORMATION_SCHEMA获取（如果存在外键约束）
         try:
             conn = db_client._get_connection()
             cursor = conn.cursor()
@@ -143,7 +148,117 @@ class SchemaManager:
             cursor.close()
             conn.close()
         except Exception as e:
-            print(f"Error getting foreign keys for {table_name}: {e}")
+            pass  # 如果查询失败，继续使用推断方法
+        
+        # 方法2: 如果数据库没有外键约束，基于字段名模式推断（M8）
+        if not foreign_keys:
+            foreign_keys = self._infer_foreign_keys(table_name)
+        
+        return foreign_keys
+    
+    def _infer_foreign_keys(self, table_name: str) -> List[Dict]:
+        """
+        基于字段名模式推断外键关系（M8）
+        
+        规则：
+        1. 如果字段名以"Id"结尾（如CustomerId），且存在对应的表（如customer），则推断为外键
+        2. 匹配目标表的主键（通常是表名+Id格式，如CustomerId）
+        """
+        foreign_keys = []
+        schema = self.load_schema()
+        
+        # 获取当前表的字段
+        current_table = None
+        for table in schema["tables"]:
+            if table["name"].lower() == table_name.lower():
+                current_table = table
+                break
+        
+        if not current_table:
+            return foreign_keys
+        
+        # 获取所有表名（用于匹配）
+        all_table_names = {t["name"].lower(): t["name"] for t in schema["tables"]}
+        
+        # 检查每个字段
+        for col in current_table["columns"]:
+            col_name = col["name"]
+            
+            # 跳过主键
+            if col.get("primary_key"):
+                continue
+            
+            # 规则: 字段名以"Id"结尾（如CustomerId, ArtistId, AlbumId, SupportRepId）
+            if col_name.endswith("Id") and len(col_name) > 2:
+                # 提取潜在的表名（去掉Id后缀）
+                potential_table_base = col_name[:-2]  # 去掉"Id"
+                
+                # 特殊处理：SupportRepId -> employee, ReportsTo -> employee等
+                special_mappings = {
+                    "supportrep": "employee",  # SupportRepId -> employee
+                    "reportsto": "employee",   # ReportsTo -> employee (如果存在)
+                }
+                
+                # 检查特殊映射
+                if potential_table_base.lower() in special_mappings:
+                    potential_table_base = special_mappings[potential_table_base.lower()]
+                
+                # 尝试匹配表名（支持多种变体）
+                matched_table = None
+                matched_pk = None
+                
+                for table_lower, table_orig in all_table_names.items():
+                    # 查找目标表
+                    target_table = None
+                    for t in schema["tables"]:
+                        if t["name"] == table_orig:
+                            target_table = t
+                            break
+                    
+                    if not target_table:
+                        continue
+                    
+                    # 查找主键
+                    pk_column = None
+                    for pk_col in target_table["columns"]:
+                        if pk_col.get("primary_key"):
+                            pk_column = pk_col["name"]
+                            break
+                    
+                    if not pk_column:
+                        continue
+                    
+                    # 匹配规则1: 精确匹配（CustomerId -> customer表）
+                    if table_lower == potential_table_base.lower():
+                        matched_table = table_orig
+                        matched_pk = pk_column
+                        break
+                    
+                    # 匹配规则2: 单复数匹配（customers -> customer, CustomerId）
+                    table_singular = table_lower.rstrip('s')
+                    if table_singular == potential_table_base.lower():
+                        matched_table = table_orig
+                        matched_pk = pk_column
+                        break
+                    
+                    # 匹配规则3: 包含匹配（SupportRepId中的"Rep"可能匹配employee）
+                    if "rep" in potential_table_base.lower() and "employee" in table_lower:
+                        matched_table = table_orig
+                        matched_pk = pk_column
+                        break
+                    
+                    # 匹配规则4: 主键名匹配（如果主键名与字段名相同或相似）
+                    if pk_column.lower() == col_name.lower():
+                        matched_table = table_orig
+                        matched_pk = pk_column
+                        break
+                
+                if matched_table and matched_pk:
+                    foreign_keys.append({
+                        "column": col_name,
+                        "references_table": matched_table,
+                        "references_column": matched_pk
+                    })
         
         return foreign_keys
     
@@ -462,6 +577,277 @@ class SchemaManager:
         
         # 如果没找到相关表，返回完整 schema（不含示例值以节省 token）
         return self.format_schema_for_prompt(include_samples=False)
+    
+    def build_relationship_graph(self) -> Dict[str, List[Dict]]:
+        """
+        构建表关系图（基于外键关系，双向连接）
+        M8: 如果schema中没有外键信息，则动态推断
+        
+        Returns:
+            关系图字典: {table_name: [{"table": ref_table, "via": fk_column, "references": ref_column}]}
+        """
+        schema = self.load_schema()
+        graph = {}
+        
+        # 初始化所有表
+        for table in schema["tables"]:
+            graph[table["name"]] = []
+        
+        # 构建双向关系图
+        for table in schema["tables"]:
+            table_name = table["name"]
+            
+            # 获取外键信息（如果schema中没有，则推断）
+            foreign_keys = table.get("foreign_keys", [])
+            if not foreign_keys:
+                # M8: 动态推断外键
+                foreign_keys = self._infer_foreign_keys(table_name)
+            
+            # 添加出边（当前表的外键指向其他表）
+            for fk in foreign_keys:
+                ref_table = fk["references_table"]
+                graph[table_name].append({
+                    "table": ref_table,
+                    "via": fk["column"],
+                    "references": fk["references_column"],
+                    "direction": "out"
+                })
+                
+                # 同时添加反向边（双向图，方便BFS搜索）
+                if ref_table in graph:
+                    graph[ref_table].append({
+                        "table": table_name,
+                        "via": fk["references_column"],
+                        "references": fk["column"],
+                        "direction": "in"
+                    })
+        
+        return graph
+    
+    def find_join_path(self, tables: List[str]) -> Optional[List[Dict]]:
+        """
+        找到连接多个表的最短路径（使用BFS算法）
+        
+        Args:
+            tables: 需要连接的表列表
+            
+        Returns:
+            JOIN步骤列表，每个步骤包含：
+            {
+                "from_table": str,
+                "join_table": str,
+                "join_type": str,  # "INNER", "LEFT", "RIGHT"
+                "condition": str,   # "table1.id = table2.foreign_id"
+                "via_column": str,  # 连接使用的列
+                "references_column": str
+            }
+        """
+        if len(tables) < 2:
+            return None
+        
+        graph = self.build_relationship_graph()
+        schema = self.load_schema()
+        
+        # 如果只有一个表，不需要JOIN
+        if len(tables) == 1:
+            return []
+        
+        # 使用BFS找到表之间的最短路径
+        def bfs_shortest_path(start: str, end: str) -> Optional[List[str]]:
+            """BFS查找两个表之间的最短路径"""
+            if start == end:
+                return [start]
+            
+            queue = [(start, [start])]
+            visited = {start}
+            
+            while queue:
+                current, path = queue.pop(0)
+                
+                # 检查直接连接
+                if current in graph:
+                    for neighbor in graph[current]:
+                        neighbor_table = neighbor["table"]
+                        if neighbor_table == end:
+                            return path + [end]
+                        
+                        if neighbor_table not in visited:
+                            visited.add(neighbor_table)
+                            queue.append((neighbor_table, path + [neighbor_table]))
+            
+            return None
+        
+        # 构建表之间的连接路径
+        join_steps = []
+        connected_tables = [tables[0]]  # 从第一个表开始
+        
+        for target_table in tables[1:]:
+            # 找到target_table到已连接表的路径
+            best_path = None
+            best_start = None
+            
+            for connected_table in connected_tables:
+                path = bfs_shortest_path(connected_table, target_table)
+                if path and (best_path is None or len(path) < len(best_path)):
+                    best_path = path
+                    best_start = connected_table
+            
+            if not best_path:
+                # 如果找不到路径，尝试反向查找
+                for connected_table in connected_tables:
+                    path = bfs_shortest_path(target_table, connected_table)
+                    if path:
+                        best_path = list(reversed(path))
+                        best_start = connected_table
+                        break
+            
+            if not best_path:
+                # 无法找到连接路径
+                print(f"⚠️  警告: 无法找到表 {target_table} 到其他表的连接路径")
+                continue
+            
+            # 生成JOIN步骤
+            for i in range(len(best_path) - 1):
+                from_table = best_path[i]
+                to_table = best_path[i + 1]
+                
+                # 查找连接条件
+                join_condition = self._find_join_condition(from_table, to_table, schema)
+                if not join_condition:
+                    continue
+                
+                # 确定JOIN类型（默认INNER JOIN）
+                join_type = self._determine_join_type(from_table, to_table, schema)
+                
+                join_steps.append({
+                    "from_table": from_table,
+                    "join_table": to_table,
+                    "join_type": join_type,
+                    "condition": join_condition["condition"],
+                    "via_column": join_condition["via_column"],
+                    "references_column": join_condition["references_column"]
+                })
+            
+            # 更新已连接的表
+            connected_tables.append(target_table)
+            # 添加路径中间的表
+            for table in best_path[1:-1]:
+                if table not in connected_tables:
+                    connected_tables.append(table)
+        
+        return join_steps if join_steps else None
+    
+    def _find_join_condition(self, table1: str, table2: str, schema: Dict) -> Optional[Dict]:
+        """
+        查找两个表之间的连接条件
+        M8: 如果schema中没有外键信息，则动态推断
+        """
+        # 获取table1的外键信息（如果schema中没有，则推断）
+        table1_obj = None
+        for table in schema["tables"]:
+            if table["name"] == table1:
+                table1_obj = table
+                break
+        
+        if table1_obj:
+            foreign_keys = table1_obj.get("foreign_keys", [])
+            if not foreign_keys:
+                # M8: 动态推断外键
+                foreign_keys = self._infer_foreign_keys(table1)
+            
+            # 检查table1的外键是否指向table2
+            for fk in foreign_keys:
+                if fk["references_table"].lower() == table2.lower():
+                    return {
+                        "condition": f"{table1}.{fk['column']} = {table2}.{fk['references_column']}",
+                        "via_column": fk["column"],
+                        "references_column": fk["references_column"]
+                    }
+        
+        # 获取table2的外键信息（如果schema中没有，则推断）
+        table2_obj = None
+        for table in schema["tables"]:
+            if table["name"] == table2:
+                table2_obj = table
+                break
+        
+        if table2_obj:
+            foreign_keys = table2_obj.get("foreign_keys", [])
+            if not foreign_keys:
+                # M8: 动态推断外键
+                foreign_keys = self._infer_foreign_keys(table2)
+            
+            # 检查table2的外键是否指向table1
+            for fk in foreign_keys:
+                if fk["references_table"].lower() == table1.lower():
+                    return {
+                        "condition": f"{table1}.{fk['references_column']} = {table2}.{fk['column']}",
+                        "via_column": fk["references_column"],
+                        "references_column": fk["column"]
+                    }
+        
+        return None
+    
+    def _determine_join_type(self, table1: str, table2: str, schema: Dict) -> str:
+        """
+        确定JOIN类型
+        默认使用INNER JOIN，如果外键允许NULL则使用LEFT JOIN
+        """
+        # 检查外键是否允许NULL
+        for table in schema["tables"]:
+            if table["name"] == table2:
+                for fk in table.get("foreign_keys", []):
+                    if fk["references_table"] == table1:
+                        # 查找外键列的定义
+                        for col in table["columns"]:
+                            if col["name"] == fk["column"]:
+                                # 如果外键允许NULL，使用LEFT JOIN
+                                if not col.get("not_null", True):
+                                    return "LEFT"
+                                break
+        
+        # 默认使用INNER JOIN
+        return "INNER"
+    
+    def format_join_suggestions(self, tables: List[str]) -> str:
+        """
+        格式化JOIN路径建议，用于添加到Prompt中
+        
+        Args:
+            tables: 涉及的表列表
+            
+        Returns:
+            格式化的JOIN建议文本
+        """
+        if len(tables) < 2:
+            return ""
+        
+        join_steps = self.find_join_path(tables)
+        if not join_steps:
+            return f"## 表关系提示\n涉及的表: {', '.join(tables)}\n注意: 无法自动找到表之间的连接路径，请根据业务逻辑手动确定JOIN条件。\n"
+        
+        lines = [
+            "## 表关系与JOIN路径建议",
+            f"### 涉及的表 ({len(tables)} 个)",
+            ", ".join(tables),
+            "",
+            "### JOIN路径建议",
+            f"主表: {tables[0]}",
+            ""
+        ]
+        
+        for i, step in enumerate(join_steps, 1):
+            join_type = step["join_type"]
+            lines.append(f"{i}. {join_type} JOIN {step['join_table']}")
+            lines.append(f"   条件: {step['condition']}")
+            lines.append("")
+        
+        lines.append("### 注意事项")
+        lines.append("- 建议使用表别名（如 customer c, invoice i）")
+        lines.append("- 确保JOIN条件正确匹配外键关系")
+        lines.append("- 根据业务需求选择合适的JOIN类型（INNER/LEFT/RIGHT）")
+        
+        return "\n".join(lines)
 
 
 # 全局实例

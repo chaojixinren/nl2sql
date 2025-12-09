@@ -48,15 +48,74 @@ ORDER BY total_sales DESC
 LIMIT 10;
 ```
 
-### 示例 5: JOIN查询
+### 示例 5: 两表INNER JOIN
 问题: 查询每个客户的订单数量
 SQL:
 ```sql
 SELECT c.FirstName, c.LastName, COUNT(i.InvoiceId) as order_count
-FROM customers c
-LEFT JOIN invoices i ON c.CustomerId = i.CustomerId
-GROUP BY c.CustomerId;
+FROM customer c
+INNER JOIN invoice i ON c.CustomerId = i.CustomerId
+GROUP BY c.CustomerId, c.FirstName, c.LastName;
 ```
+
+### 示例 6: 两表LEFT JOIN
+问题: 查询所有客户及其订单总数（包括没有订单的客户）
+SQL:
+```sql
+SELECT c.CustomerId, c.FirstName, c.LastName, COUNT(i.InvoiceId) as order_count
+FROM customer c
+LEFT JOIN invoice i ON c.CustomerId = i.CustomerId
+GROUP BY c.CustomerId, c.FirstName, c.LastName;
+```
+
+### 示例 7: 三表JOIN
+问题: 查询每个艺术家发行的专辑数量
+SQL:
+```sql
+SELECT a.Name as artist_name, COUNT(al.AlbumId) as album_count
+FROM artist a
+LEFT JOIN album al ON a.ArtistId = al.ArtistId
+GROUP BY a.ArtistId, a.Name;
+```
+
+### 示例 8: 多表复杂JOIN（带聚合）
+问题: 查询每个客户的订单总金额和订单数量
+SQL:
+```sql
+SELECT 
+    c.CustomerId,
+    c.FirstName,
+    c.LastName,
+    COUNT(i.InvoiceId) as order_count,
+    SUM(i.Total) as total_amount
+FROM customer c
+LEFT JOIN invoice i ON c.CustomerId = i.CustomerId
+GROUP BY c.CustomerId, c.FirstName, c.LastName;
+```
+
+### 示例 9: 多表JOIN（三表以上）
+问题: 查询每个专辑的曲目数量和总时长
+SQL:
+```sql
+SELECT 
+    al.Title as album_title,
+    a.Name as artist_name,
+    COUNT(t.TrackId) as track_count,
+    SUM(t.Milliseconds) as total_duration_ms
+FROM album al
+INNER JOIN artist a ON al.ArtistId = a.ArtistId
+LEFT JOIN track t ON al.AlbumId = t.AlbumId
+GROUP BY al.AlbumId, al.Title, a.Name;
+```
+
+### 示例 10: JOIN最佳实践
+- **使用表别名**：为每个表使用简短别名（如 customer c, invoice i）
+- **JOIN类型选择**：
+  - INNER JOIN: 只返回两表都有匹配的记录
+  - LEFT JOIN: 返回左表所有记录，右表无匹配则为NULL
+  - RIGHT JOIN: 返回右表所有记录，左表无匹配则为NULL
+- **JOIN条件**：确保使用正确的外键关系（参考Schema中的外键信息）
+- **字段引用**：使用别名.字段名（如 c.CustomerId）避免歧义
 
 ## 要求
 1. **只返回SQL语句**，不要有任何解释或说明

@@ -2,9 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **当前版本**: M7 - Dialog Clarification（澄清与消歧）  
+> **当前版本**: M8 - Multi-Table JOIN（多表联结）  
 > **状态**: ✅ 核心功能已实现并测试通过  
-> **说明**: M6 阶段（RAG增强）暂时跳过，直接进入M7阶段
+> **说明**: M6 阶段（RAG增强）暂时跳过，直接进入M7阶段，现已完成M8阶段
 
 ## 项目概述
 
@@ -101,6 +101,9 @@
    
    # 测试 Dialog Clarification 功能 (M7)
    python test_clarify.py
+   
+   # 测试 Multi-Table JOIN 功能 (M8)
+   python test_join.py
    ```
 
 
@@ -111,7 +114,8 @@
 - **智能表匹配**：根据问题自动匹配相关表，减少 token 消耗
 - **SQL 语法验证**：使用 sqlglot 在执行前验证 SQL 语法
 - **自动修复**：SQL 有错误时自动分析并重新生成（最多 3 次）
-- **多轮对话澄清** ：自动识别模糊问题，生成封闭式澄清问句，支持多轮交互
+- **多轮对话澄清** (M7)：自动识别模糊问题，生成封闭式澄清问句，支持多轮交互
+- **多表 JOIN 生成** (M8)：基于外键关系自动生成 JOIN 路径，支持2-4表联结
 
 ## 项目结构
 
@@ -126,7 +130,7 @@ rookie-nl2sql-main/
 │   ├── base_graph.py   # 主流程图
 │   ├── state.py        # 状态定义
 │   ├── nodes/          # 节点实现
-│   │   ├── generate_sql.py   # SQL 生成节点
+│   │   ├── generate_sql.py   # SQL 生成节点 (M1/M3/M8)
 │   │   ├── validate_sql.py   # SQL 验证节点 (M4)
 │   │   ├── critique_sql.py   # SQL 错误分析节点 (M4)
 │   │   ├── clarify.py        # 澄清与消歧节点 (M7)
@@ -136,7 +140,7 @@ rookie-nl2sql-main/
 ├── tools/               # 工具模块
 │   ├── db.py           # 数据库客户端（MySQL）
 │   ├── llm_client.py   # LLM 客户端
-│   ├── schema_manager.py # Schema 管理器
+│   ├── schema_manager.py # Schema 管理器 (M3/M8: JOIN路径生成)
 │   └── sandbox.py      # SQL 沙箱安全模块 (M5)
 ├── prompts/             # Prompt 模板
 │   ├── nl2sql.txt      # SQL 生成提示词
@@ -147,6 +151,7 @@ rookie-nl2sql-main/
 ├── test_guardrail.py    # SQL Guardrail 功能测试脚本 (M4)
 ├── test_sandbox.py      # SQL Sandbox 功能测试脚本 (M5)
 ├── test_clarify.py      # Dialog Clarification 功能测试脚本 (M7)
+├── test_join.py         # Multi-Table JOIN 功能测试脚本 (M8)
 ├── requirements.txt     # 依赖列表
 └── README.md           # 项目说明
 ```
@@ -164,6 +169,10 @@ rookie-nl2sql-main/
 日志记录 (log)
   ↓
 SQL 生成 (generate_sql) ← 智能 Schema 匹配
+  ↓
+  ├─ M8: 检测多表查询 → 生成JOIN路径建议 → 增强Prompt
+  │
+  └─ 调用LLM生成SQL
   ↓
 澄清判断 (clarify) ← M7: 判断是否需要澄清
   ↓
@@ -231,6 +240,7 @@ SQL 生成 (generate_sql) ← 智能 Schema 匹配
 - **SQL Guardrail**：语法验证→错误分析→自动修复→再验证的完整循环（M4）。
 - **SQL Sandbox**：危险关键字拦截、行数限制、执行超时、安全日志（M5）。
 - **Dialog Clarification**：模糊问题识别→生成澄清问句→多轮对话→问题整合（M7）。
+- **Multi-Table JOIN**：外键推断→关系图构建→JOIN路径生成→Few-shot增强（M8）。
 - **评估机制**：测试脚本支持端到端验证，衡量可执行率、正确率与耗时。
 
 ## 通过本项目可以学到
@@ -244,7 +254,17 @@ SQL 生成 (generate_sql) ← 智能 Schema 匹配
 
 ## 版本历史
 
-### M7 - Dialog Clarification（当前版本）✅
+### M8 - Multi-Table JOIN（当前版本）✅
+
+- ✅ 外键关系推断：基于字段名模式自动推断外键关系（如CustomerId → customer）
+- ✅ 关系图构建：构建双向表关系图，支持BFS路径查找
+- ✅ JOIN路径生成：使用BFS算法查找多表之间的最短连接路径
+- ✅ JOIN类型判断：根据外键是否允许NULL自动选择INNER/LEFT JOIN
+- ✅ Few-shot增强：添加6个多表JOIN示例，涵盖2-4表场景
+- ✅ Prompt增强：自动在Prompt中添加JOIN路径建议和连接条件
+- ✅ 验收标准：多表用例执行准确率 ≥ 70%
+
+### M7 - Dialog Clarification ✅
 
 - ✅ 澄清判据：自动识别模糊问题（时间范围、聚合方式、字段需求、歧义词汇）
 - ✅ 生成澄清问句：LLM 生成封闭式澄清问题，提供3-5个选项
@@ -296,22 +316,6 @@ SQL 生成 (generate_sql) ← 智能 Schema 匹配
 - ✅ LangGraph 工作流
 - ✅ 意图解析
 - ✅ 日志记录
-
-## 扩展方向
-
-### 已完成 ✅
-
-- ✅ **MySQL 支持**：已完成从 SQLite 到 MySQL 的迁移
-- ✅ **SQL 语法验证** (M4)：使用 sqlglot 进行语法验证，83%+ 错误捕获率
-- ✅ **SQL 自修复** (M4)：LLM 驱动的错误分析和自动修复，最多 3 次重试
-- ✅ **SQL 安全沙箱** (M5)：危险关键字拦截、行数限制、执行超时、安全日志
-- ✅ **多轮对话澄清** (M7)：自动识别模糊问题，生成封闭式澄清问句，支持多轮交互
-
-### 计划中 📋
-
-- 📋 **RAG 增强** (M6)：使用 RAG 技术增强 SQL 生成准确性（暂时跳过）
-- 📋 **结果可视化** (M8)：查询结果的可视化展示
-- 📋 **答案生成** (M9)：将 SQL 结果转换为自然语言答案
 
 
 ## 许可证
