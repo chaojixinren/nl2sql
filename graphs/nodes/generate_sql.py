@@ -143,10 +143,10 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
         )
     else:
         # Original prompt
-    prompt = prompt_template.format(
-        schema=real_schema,
-        question=question
-    )
+        prompt = prompt_template.format(
+            schema=real_schema,
+            question=question
+        )
 
     try:
         # Call LLM
