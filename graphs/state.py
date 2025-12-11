@@ -16,7 +16,7 @@ class NL2SQLState(TypedDict):
     - candidate_sql (M1) ✓ Added
     - validation (M4) ✓ Added
     - execution (M2) ✓ Added
-    - answer (M9)
+    - answer (M9) ✓ Added
     - trace (M11)
     """
     # User input
@@ -58,3 +58,7 @@ class NL2SQLState(TypedDict):
     clarification_count: Optional[int]  # 澄清轮次计数
     max_clarifications: Optional[int]  # 最大澄清次数（默认3次）
     normalized_question: Optional[str]  # 规范化后的问题（包含澄清信息）
+    
+    # Answer Generation (M9)
+    answer: Optional[str]  # 生成的自然语言答案
+    answer_generated_at: Optional[str]  # 答案生成时间

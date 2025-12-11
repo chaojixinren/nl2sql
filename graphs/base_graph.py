@@ -30,6 +30,7 @@ from graphs.nodes.execute_sql import execute_sql_node
 from graphs.nodes.validate_sql import validate_sql_node, should_retry_sql  # M4
 from graphs.nodes.critique_sql import critique_sql_node  # M4
 from graphs.nodes.clarify import clarify_node, should_ask_clarification  # M7
+from graphs.nodes.answer_builder import answer_builder_node  # M9
 
 def log_node(state: NL2SQLState) -> NL2SQLState:
     """
@@ -162,6 +163,15 @@ def echo_node(state: NL2SQLState) -> NL2SQLState:
     if dialog_history:
         print(f"\n对话历史 ({len(dialog_history)} 条消息)")
 
+    # M9: Show generated natural language answer
+    answer = state.get('answer')
+    if answer:
+        print(f"\n{'='*50}")
+        print("📊 自然语言答案 (M9)")
+        print(f"{'='*50}")
+        print(answer)
+        print(f"{'='*50}")
+
     print(f"Timestamp: {state.get('timestamp')}")
     print(f"\n{'='*50}\n")
 
@@ -176,6 +186,7 @@ def build_graph() -> StateGraph:
     M2: Added execute_sql node: parse_intent -> generate_sql -> execute_sql -> echo
     M4: Added validation and self-healing: generate -> validate -> (fail) -> critique -> regenerate
     M7: Added clarification node: generate_sql -> clarify -> (clarify/continue) -> validate_sql
+    M9: Added answer builder: execute_sql -> answer_builder -> echo
     """
     # Create graph
     workflow = StateGraph(NL2SQLState)
@@ -188,6 +199,7 @@ def build_graph() -> StateGraph:
     workflow.add_node("validate_sql", validate_sql_node)  # M4: New validation node
     workflow.add_node("critique_sql", critique_sql_node)  # M4: New critique node
     workflow.add_node("execute_sql", execute_sql_node)
+    workflow.add_node("answer_builder", answer_builder_node)  # M9: New answer builder node
     workflow.add_node("echo", echo_node)
 
     # Define edges
@@ -223,8 +235,9 @@ def build_graph() -> StateGraph:
     # M4: After critique, regenerate SQL
     workflow.add_edge("critique_sql", "generate_sql")  # Loop back to generate
     
-    # Original execution flow
-    workflow.add_edge("execute_sql", "echo")
+    # M9: After execution, build natural language answer
+    workflow.add_edge("execute_sql", "answer_builder")
+    workflow.add_edge("answer_builder", "echo")
     workflow.add_edge("echo", END)
 
     # Compile graph
@@ -238,6 +251,7 @@ def run_query(question: str, session_id: str = None, user_id: str = None, clarif
     Run a single query through the graph.
     M4: Now includes validation and self-healing.
     M7: Now supports clarification answers and user_id.
+    M9: Now includes natural language answer generation.
     """
     if session_id is None:
         session_id = str(uuid.uuid4())
@@ -271,12 +285,15 @@ def run_query(question: str, session_id: str = None, user_id: str = None, clarif
         "clarification_answer": clarification_answer,  # M7: User's answer
         "clarification_count": 0,
         "max_clarifications": 3,
-        "normalized_question": None
+        "normalized_question": None,
+        # M9: Answer generation fields
+        "answer": None,
+        "answer_generated_at": None
     }
 
     # Run graph
     print(f"\n{'='*50}")
-    print(f"Starting NL2SQL Graph (M7 - Dialog Clarification)")
+    print(f"Starting NL2SQL Graph (M9 - Answer Builder)")
     print(f"{'='*50}")
 
     result = graph.invoke(initial_state)

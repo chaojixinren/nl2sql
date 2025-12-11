@@ -2,9 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **当前版本**: M8 - Multi-Table JOIN（多表联结）  
+> **当前版本**: M9 - Answer Builder（答案生成）  
 > **状态**: ✅ 核心功能已实现并测试通过  
-> **说明**: M6 阶段（RAG增强）暂时跳过，直接进入M7阶段，现已完成M8阶段
+> **说明**: M6 阶段（RAG增强）暂时跳过，现已完成M9阶段
 
 ## 项目概述
 
@@ -88,23 +88,51 @@
 
    确保 MySQL 中已创建 `chinook` 数据库并导入数据。可以使用项目提供的迁移脚本（如果有）。
 
-6. **运行测试**
+6. **运行程序**
    ```bash
-   # 测试完整流程
-   python test_graph.py
-   
-   # 测试 SQL Guardrail 功能 (M4)
-   python test_guardrail.py
-   
-   # 测试 SQL Sandbox 功能 (M5)
-   python test_sandbox.py
-   
-   # 测试 Dialog Clarification 功能 (M7)
-   python test_clarify.py
-   
-   # 测试 Multi-Table JOIN 功能 (M8)
-   python test_join.py
+   # 启动用户交互程序（推荐）
+   python nl2sql_chat.py
    ```
+   
+   **使用示例**：
+   ```
+   💬 请输入您的问题: 查询每个客户的订单数量
+   
+   🔍 正在处理：查询每个客户的订单数量...
+   
+   ============================================================
+   📊 查询结果
+   ============================================================
+   
+   📌 结论
+   ──────────────────────────────────────────────────
+   查询结果显示，共有59个客户，每个客户都有订单记录...
+   
+   📌 关键值
+   ──────────────────────────────────────────────────
+     - 总客户数: 59
+     - 平均订单数: 7.5
+     - 最大订单数: 13
+   
+   📌 SQL说明
+   ──────────────────────────────────────────────────
+   本次查询通过JOIN customer表和invoice表，统计了每个客户的订单数量...
+   
+   ============================================================
+   
+   💬 请输入您的问题: sql
+   💡 SQL查询已显示
+   
+   💬 请输入您的问题: 查询每个客户的订单数量
+   ...
+   💻 执行的SQL查询：
+      SELECT c.CustomerId, c.FirstName, c.LastName, COUNT(i.InvoiceId) as order_count
+      FROM customer c
+      INNER JOIN invoice i ON c.CustomerId = i.CustomerId
+      GROUP BY c.CustomerId, c.FirstName, c.LastName;
+   ```
+   
+ 
 
 
 
@@ -116,6 +144,7 @@
 - **自动修复**：SQL 有错误时自动分析并重新生成（最多 3 次）
 - **多轮对话澄清** (M7)：自动识别模糊问题，生成封闭式澄清问句，支持多轮交互
 - **多表 JOIN 生成** (M8)：基于外键关系自动生成 JOIN 路径，支持2-4表联结
+- **自然语言答案** (M9)：将SQL结果转换为易读的自然语言答案，包含结论、关键值和SQL说明
 
 ## 项目结构
 
@@ -134,7 +163,8 @@ rookie-nl2sql-main/
 │   │   ├── validate_sql.py   # SQL 验证节点 (M4)
 │   │   ├── critique_sql.py   # SQL 错误分析节点 (M4)
 │   │   ├── clarify.py        # 澄清与消歧节点 (M7)
-│   │   └── execute_sql.py   # SQL 执行节点
+│   │   ├── execute_sql.py   # SQL 执行节点
+│   │   └── answer_builder.py # 答案生成节点 (M9)
 │   └── utils/          # 工具函数
 │       └── performance.py  # 性能监控
 ├── tools/               # 工具模块
@@ -145,13 +175,16 @@ rookie-nl2sql-main/
 ├── prompts/             # Prompt 模板
 │   ├── nl2sql.txt      # SQL 生成提示词
 │   ├── critique.txt    # SQL 错误分析提示词 (M4)
-│   └── clarify.txt     # 澄清问题生成提示词 (M7)
+│   ├── clarify.txt     # 澄清问题生成提示词 (M7)
+│   └── answer.txt      # 答案生成提示词 (M9)
 ├── logs/                # 日志目录
+├── nl2sql_chat.py       # 用户交互程序（推荐使用）
 ├── test_graph.py        # 完整流程测试脚本
 ├── test_guardrail.py    # SQL Guardrail 功能测试脚本 (M4)
 ├── test_sandbox.py      # SQL Sandbox 功能测试脚本 (M5)
 ├── test_clarify.py      # Dialog Clarification 功能测试脚本 (M7)
 ├── test_join.py         # Multi-Table JOIN 功能测试脚本 (M8)
+├── test_answer.py       # Answer Builder 功能测试脚本 (M9)
 ├── requirements.txt     # 依赖列表
 └── README.md           # 项目说明
 ```
@@ -182,7 +215,9 @@ SQL 生成 (generate_sql) ← 智能 Schema 匹配
   │
   └─ 不需要澄清 → SQL 验证 (validate_sql) ← 使用 sqlglot 验证语法 (M4)
        ↓
-    ├─ ✓ 通过 → SQL 执行 (execute_sql) → 结果输出 (echo) → END
+    ├─ ✓ 通过 → SQL 执行 (execute_sql) → 答案生成 (answer_builder) ← M9: 生成自然语言答案
+    │                                                              ↓
+    │                                                         结果输出 (echo) → END
     │
     └─ ✗ 失败 → 错误分析 (critique_sql) ← LLM 分析错误 (M4)
          ↓
@@ -241,6 +276,7 @@ SQL 生成 (generate_sql) ← 智能 Schema 匹配
 - **SQL Sandbox**：危险关键字拦截、行数限制、执行超时、安全日志（M5）。
 - **Dialog Clarification**：模糊问题识别→生成澄清问句→多轮对话→问题整合（M7）。
 - **Multi-Table JOIN**：外键推断→关系图构建→JOIN路径生成→Few-shot增强（M8）。
+- **Answer Builder**：数据摘要→关键值提取→LLM生成答案→包含结论、关键值和SQL说明（M9）。
 - **评估机制**：测试脚本支持端到端验证，衡量可执行率、正确率与耗时。
 
 ## 通过本项目可以学到
@@ -254,7 +290,17 @@ SQL 生成 (generate_sql) ← 智能 Schema 匹配
 
 ## 版本历史
 
-### M8 - Multi-Table JOIN（当前版本）✅
+### M9 - Answer Builder（当前版本）✅
+
+- ✅ 数据摘要格式化：智能处理空结果、小数据集（≤10行）和大数据集（>10行）
+- ✅ 关键值提取：自动提取数值字段的统计信息（最大值、最小值、平均值、总计等）
+- ✅ 自然语言答案生成：使用LLM将SQL结果转换为易读的自然语言答案
+- ✅ 答案结构：包含结论、关键值、数据摘要和SQL说明四个部分
+- ✅ 严格约束：确保答案不编造字段，所有数值与实际数据完全一致
+- ✅ 用户交互程序：提供 `nl2sql_chat.py` 面向最终用户的简洁交互界面
+- ✅ 验收标准：答案含结论、关键值和SQL说明，无编造字段
+
+### M8 - Multi-Table JOIN ✅
 
 - ✅ 外键关系推断：基于字段名模式自动推断外键关系（如CustomerId → customer）
 - ✅ 关系图构建：构建双向表关系图，支持BFS路径查找

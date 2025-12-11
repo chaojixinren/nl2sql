@@ -1,6 +1,6 @@
 {
   "database_type": "mysql",
-  "generated_at": "2025-12-09T17:05:58.872204",
+  "generated_at": "2025-12-09T22:18:31.921634",
   "tables": [
     {
       "name": "album",
@@ -13,9 +13,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "albumid",
+            "专辑编号",
             "album_id",
-            "专辑编号"
+            "albumid"
           ],
           "sample_values": [
             1,
@@ -46,9 +46,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "artistid",
+            "艺术家编号",
             "artist_id",
-            "艺术家编号"
+            "artistid"
           ],
           "sample_values": [
             1,
@@ -57,7 +57,13 @@
           ]
         }
       ],
-      "foreign_keys": [],
+      "foreign_keys": [
+        {
+          "column": "ArtistId",
+          "references_table": "artist",
+          "references_column": "ArtistId"
+        }
+      ],
       "row_count": 347
     },
     {
@@ -71,9 +77,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "artistid",
+            "艺术家编号",
             "artist_id",
-            "艺术家编号"
+            "artistid"
           ],
           "sample_values": [
             1,
@@ -129,9 +135,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
+            "first_name",
             "名名称",
-            "firstname",
-            "first_name"
+            "firstname"
           ],
           "sample_values": [
             "Luís",
@@ -146,8 +152,8 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "姓名称",
             "lastname",
+            "姓名称",
             "last_name"
           ],
           "sample_values": [
@@ -243,9 +249,9 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "postal_code",
+            "postalcode",
             "邮编代码",
-            "postalcode"
+            "postal_code"
           ],
           "sample_values": [
             "12227-000",
@@ -308,9 +314,9 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "support_rep_id",
             "客服代表编号",
-            "supportrepid"
+            "supportrepid",
+            "support_rep_id"
           ],
           "sample_values": [
             3,
@@ -319,7 +325,13 @@
           ]
         }
       ],
-      "foreign_keys": [],
+      "foreign_keys": [
+        {
+          "column": "SupportRepId",
+          "references_table": "employee",
+          "references_column": "EmployeeId"
+        }
+      ],
       "row_count": 59
     },
     {
@@ -334,8 +346,8 @@
           "description": "",
           "aliases": [
             "员工编号",
-            "employeeid",
-            "employee_id"
+            "employee_id",
+            "employeeid"
           ],
           "sample_values": [
             1,
@@ -350,8 +362,8 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "姓名称",
             "lastname",
+            "姓名称",
             "last_name"
           ],
           "sample_values": [
@@ -367,9 +379,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
+            "first_name",
             "名名称",
-            "firstname",
-            "first_name"
+            "firstname"
           ],
           "sample_values": [
             "Andrew",
@@ -400,8 +412,8 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "reportsto",
             "汇报to",
+            "reportsto",
             "reports_to"
           ],
           "sample_values": [
@@ -417,9 +429,9 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "生日日期",
+            "birth_date",
             "birthdate",
-            "birth_date"
+            "生日日期"
           ],
           "sample_values": [
             "1962-02-18 00:00:00",
@@ -434,9 +446,9 @@
           "not_null": false,
           "description": "",
           "aliases": [
+            "hire_date",
             "入职日期",
-            "hiredate",
-            "hire_date"
+            "hiredate"
           ],
           "sample_values": [
             "2002-08-14 00:00:00",
@@ -511,9 +523,9 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "postal_code",
+            "postalcode",
             "邮编代码",
-            "postalcode"
+            "postal_code"
           ],
           "sample_values": [
             "T5K 2N1",
@@ -585,8 +597,8 @@
           "description": "",
           "aliases": [
             "genre_id",
-            "genreid",
-            "流派编号"
+            "流派编号",
+            "genreid"
           ],
           "sample_values": [
             1,
@@ -659,9 +671,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
+            "发票日期",
             "invoice_date",
-            "invoicedate",
-            "发票日期"
+            "invoicedate"
           ],
           "sample_values": [
             "2021-01-01 00:00:00",
@@ -676,9 +688,9 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "账单地址",
             "billing_address",
-            "billingaddress"
+            "billingaddress",
+            "账单地址"
           ],
           "sample_values": [
             "Theodor-Heuss-Straße 34",
@@ -693,9 +705,9 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "billing_city",
+            "账单城市",
             "billingcity",
-            "账单城市"
+            "billing_city"
           ],
           "sample_values": [
             "Stuttgart",
@@ -711,8 +723,8 @@
           "description": "",
           "aliases": [
             "billing_state",
-            "账单州",
-            "billingstate"
+            "billingstate",
+            "账单州"
           ],
           "sample_values": [
             "AB",
@@ -728,8 +740,8 @@
           "description": "",
           "aliases": [
             "账单国家",
-            "billingcountry",
-            "billing_country"
+            "billing_country",
+            "billingcountry"
           ],
           "sample_values": [
             "Germany",
@@ -744,8 +756,8 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "billing_postal_code",
             "billingpostalcode",
+            "billing_postal_code",
             "账单邮编代码"
           ],
           "sample_values": [
@@ -771,7 +783,13 @@
           ]
         }
       ],
-      "foreign_keys": [],
+      "foreign_keys": [
+        {
+          "column": "CustomerId",
+          "references_table": "customer",
+          "references_column": "CustomerId"
+        }
+      ],
       "row_count": 412
     },
     {
@@ -786,8 +804,8 @@
           "description": "",
           "aliases": [
             "发票line编号",
-            "invoice_line_id",
-            "invoicelineid"
+            "invoicelineid",
+            "invoice_line_id"
           ],
           "sample_values": [
             1,
@@ -820,8 +838,8 @@
           "description": "",
           "aliases": [
             "track_id",
-            "trackid",
-            "曲目编号"
+            "曲目编号",
+            "trackid"
           ],
           "sample_values": [
             2,
@@ -860,7 +878,18 @@
           ]
         }
       ],
-      "foreign_keys": [],
+      "foreign_keys": [
+        {
+          "column": "InvoiceId",
+          "references_table": "invoice",
+          "references_column": "InvoiceId"
+        },
+        {
+          "column": "TrackId",
+          "references_table": "track",
+          "references_column": "TrackId"
+        }
+      ],
       "row_count": 2240
     },
     {
@@ -875,8 +904,8 @@
           "description": "",
           "aliases": [
             "media_type_id",
-            "mediatypeid",
-            "媒体类型编号"
+            "媒体类型编号",
+            "mediatypeid"
           ],
           "sample_values": [
             1,
@@ -915,9 +944,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "playlistid",
+            "播放列表编号",
             "playlist_id",
-            "播放列表编号"
+            "playlistid"
           ],
           "sample_values": [
             1,
@@ -956,9 +985,9 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "playlistid",
+            "播放列表编号",
             "playlist_id",
-            "播放列表编号"
+            "playlistid"
           ],
           "sample_values": [
             1,
@@ -974,8 +1003,8 @@
           "description": "",
           "aliases": [
             "track_id",
-            "trackid",
-            "曲目编号"
+            "曲目编号",
+            "trackid"
           ],
           "sample_values": [
             1,
@@ -999,8 +1028,8 @@
           "description": "",
           "aliases": [
             "track_id",
-            "trackid",
-            "曲目编号"
+            "曲目编号",
+            "trackid"
           ],
           "sample_values": [
             1,
@@ -1031,9 +1060,9 @@
           "not_null": false,
           "description": "",
           "aliases": [
-            "albumid",
+            "专辑编号",
             "album_id",
-            "专辑编号"
+            "albumid"
           ],
           "sample_values": [
             1,
@@ -1049,8 +1078,8 @@
           "description": "",
           "aliases": [
             "media_type_id",
-            "mediatypeid",
-            "媒体类型编号"
+            "媒体类型编号",
+            "mediatypeid"
           ],
           "sample_values": [
             1,
@@ -1066,8 +1095,8 @@
           "description": "",
           "aliases": [
             "genre_id",
-            "genreid",
-            "流派编号"
+            "流派编号",
+            "genreid"
           ],
           "sample_values": [
             1,
@@ -1098,8 +1127,8 @@
           "not_null": true,
           "description": "",
           "aliases": [
-            "milliseconds",
-            "毫秒"
+            "毫秒",
+            "milliseconds"
           ],
           "sample_values": [
             343719,
@@ -1140,7 +1169,23 @@
           ]
         }
       ],
-      "foreign_keys": [],
+      "foreign_keys": [
+        {
+          "column": "AlbumId",
+          "references_table": "album",
+          "references_column": "AlbumId"
+        },
+        {
+          "column": "MediaTypeId",
+          "references_table": "mediatype",
+          "references_column": "MediaTypeId"
+        },
+        {
+          "column": "GenreId",
+          "references_table": "genre",
+          "references_column": "GenreId"
+        }
+      ],
       "row_count": 3503
     }
   ],
