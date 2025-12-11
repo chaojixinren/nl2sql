@@ -172,6 +172,7 @@ def answer_builder_node(state: NL2SQLState) -> NL2SQLState:
     """
     Build natural language answer from SQL execution results.
     M9: Converts SQL results to natural language with conclusion, key values, and SQL provenance.
+    M9.5: Also handles chat responses (non-SQL queries).
     
     Args:
         state: Current NL2SQL state
@@ -183,8 +184,21 @@ def answer_builder_node(state: NL2SQLState) -> NL2SQLState:
     candidate_sql = state.get("candidate_sql", "")
     execution_result = state.get("execution_result")
     
-    print(f"\n=== Answer Builder Node (M9) ===")
+    # M9.5: 检查是否是聊天响应
+    is_chat_response = state.get("is_chat_response", False)
+    chat_response = state.get("chat_response")
+    
+    print(f"\n=== Answer Builder Node (M9/M9.5) ===")
     print(f"Question: {question}")
+    
+    # M9.5: 如果是聊天响应，直接使用LLM的回复
+    if is_chat_response and chat_response:
+        print("💬 使用聊天回复作为答案")
+        return {
+            **state,
+            "answer": chat_response,
+            "answer_generated_at": datetime.now().isoformat()
+        }
     
     # Check if execution result exists
     if not execution_result:

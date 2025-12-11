@@ -8,6 +8,7 @@ from typing import Optional
 from datetime import datetime
 import os
 import io
+import re
 from contextlib import redirect_stdout, redirect_stderr
 
 # 添加项目根目录到路径
@@ -34,6 +35,7 @@ class NL2SQLChat:
         print("=" * 60)
         print("💡 提示：")
         print("  - 直接用自然语言提问，例如：'查询每个客户的订单数量'")
+        print("  - 也可以进行普通对话，例如：'你好'、'你是谁'")
         print("  - 输入 'help' 查看帮助")
         print("  - 输入 'quit' 退出")
         print("=" * 60 + "\n")
@@ -44,11 +46,15 @@ class NL2SQLChat:
         print("📖 使用帮助")
         print("=" * 60)
         print("\n基本使用：")
-        print("  直接输入您的问题，例如：")
+        print("  数据查询（直接输入您的问题）：")
         print("    • 查询每个客户的订单数量")
         print("    • 查询客户ID为1的客户信息")
         print("    • 统计每个城市的客户数量")
         print("    • 查询销售额最高的前10个客户")
+        print("\n  普通对话：")
+        print("    • 你好")
+        print("    • 你是谁")
+        print("    • 如何使用这个系统")
         print("\n命令：")
         print("  help          - 显示此帮助")
         print("  quit / exit   - 退出程序")
@@ -160,7 +166,20 @@ class NL2SQLChat:
                     self.current_state = result
                     # 继续执行后续的检查和显示逻辑
             
-            # 检查执行结果
+            # M9.5: 检查是否是聊天响应
+            is_chat_response = result.get('is_chat_response', False)
+            chat_response = result.get('chat_response')
+            
+            if is_chat_response and chat_response:
+                # M9.5: 直接显示聊天回复，跳过SQL执行流程
+                print("\n" + "=" * 60)
+                print("💬 回复")
+                print("=" * 60)
+                print(chat_response)
+                print("=" * 60)
+                return
+            
+            # 检查执行结果（仅SQL查询）
             execution_result = result.get('execution_result')
             if not execution_result:
                 print("❌ 查询执行失败：未获取到执行结果")
@@ -228,6 +247,12 @@ class NL2SQLChat:
                 user_input = input("💬 请输入您的问题: ").strip()
                 
                 if not user_input:
+                    continue
+                
+                # 安全修复：输入验证 - 限制输入长度，防止DoS攻击
+                MAX_INPUT_LENGTH = 2000
+                if len(user_input) > MAX_INPUT_LENGTH:
+                    print(f"\n⚠️  输入过长，请控制在{MAX_INPUT_LENGTH}个字符以内\n")
                     continue
                 
                 # 处理命令

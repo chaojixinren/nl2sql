@@ -9,7 +9,8 @@ import json
 from datetime import datetime
 
 # 添加项目根目录到路径
-project_root = Path(__file__).parent
+# 安全修复：test文件在test子目录中，需要使用parent.parent获取项目根目录
+project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from graphs.base_graph import run_query
@@ -38,6 +39,10 @@ class InteractiveTester:
         print("  - SQL验证与自动修复 (M4)")
         print("  - 多表JOIN生成 (M8)")
         print("  - 自然语言答案生成 (M9)")
+        print("  - 安全加固与聊天支持 (M9.5)")
+        print("    * SQL注入防护")
+        print("    * 智能聊天响应识别")
+        print("    * 敏感信息保护")
         print("\n输入 'help' 查看命令，输入 'quit' 退出")
         print("=" * 70 + "\n")
     

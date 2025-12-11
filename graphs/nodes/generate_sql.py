@@ -18,7 +18,6 @@ from tools.llm_client import llm_client
 from tools.schema_manager import schema_manager  # M3: 新增 Schema Manager
 from graphs.utils.performance import monitor_performance
 
-
 def load_prompt_template(template_name: str) -> str:
     """
     Load prompt template from prompts/ directory.
@@ -38,17 +37,22 @@ def load_prompt_template(template_name: str) -> str:
         return f.read()
 
 
-def extract_sql_from_response(response: str) -> str:
+def extract_sql_from_response(response: str) -> tuple:
     """
     Extract SQL from LLM response.
     Handles various response formats (with/without markdown code blocks).
+    M9.5: 增强检测，区分SQL查询和聊天回复
 
     Args:
         response: LLM response text
 
     Returns:
-        Extracted SQL statement
+        Tuple of (extracted_sql, is_valid_sql)
+        - extracted_sql: Extracted SQL statement or original response
+        - is_valid_sql: Whether the extracted content is a valid SQL statement
     """
+    import re
+    
     # Remove markdown code blocks
     if "```sql" in response:
         # Extract content between ```sql and ```
@@ -67,11 +71,32 @@ def extract_sql_from_response(response: str) -> str:
     # Clean up
     sql = sql.strip()
 
+    # M9.5: 检查是否是有效的SQL语句
+    # 检查是否包含SQL关键字（SELECT, FROM等）
+    sql_lower = sql.lower()
+    sql_keywords = ['select', 'from', 'where', 'join', 'group', 'order', 'having', 'limit']
+    has_sql_keywords = any(keyword in sql_lower for keyword in sql_keywords)
+    
+    # 检查是否看起来像SQL（包含SELECT和FROM）
+    is_valid_sql = has_sql_keywords and 'select' in sql_lower and 'from' in sql_lower
+    
+    # 如果包含明显的聊天内容标识（中文回复、问候语等），不是SQL
+    chat_indicators = [
+        '你好', '您好', '请问', '请提供', '想要查询', '我可以', '帮助',
+        'hello', 'hi', 'how can i', 'i can help', 'please provide',
+        '无法', '不能', '抱歉', '对不起', 'sorry', 'cannot', 'unable'
+    ]
+    has_chat_indicators = any(indicator in sql for indicator in chat_indicators)
+    
+    if has_chat_indicators or not is_valid_sql:
+        # 这是聊天回复，不是SQL
+        return response.strip(), False
+
     # Ensure SQL ends with semicolon
     if not sql.endswith(";"):
         sql += ";"
 
-    return sql
+    return sql, True
 
 
 def get_database_schema(question: str = "") -> str:
@@ -92,6 +117,70 @@ def get_database_schema(question: str = "") -> str:
         return schema_manager.format_schema_for_prompt()
 
 
+def detect_user_intent(question: str) -> tuple:
+    """
+    M9.5: 使用LLM判断用户意图是聊天还是数据查询
+    
+    Args:
+        question: 用户问题
+        
+    Returns:
+        Tuple of (is_chat, reason)
+        - is_chat: True if it's a chat question, False if it's a SQL query
+        - reason: Brief reason for the decision
+    """
+    # 使用模块级别的llm_client（已在文件顶部导入）
+    
+    intent_prompt = f"""请判断以下用户输入的意图：
+
+用户输入："{question}"
+
+请判断用户的意图是：
+1. **聊天对话**：问候、自我介绍、询问系统功能、非数据查询类问题等
+2. **数据查询**：需要从数据库中查询、统计、分析数据的问题
+
+请只回答 "CHAT" 或 "QUERY"，不要有其他内容。
+
+如果用户是在：
+- 打招呼、问候、自我介绍
+- 询问系统如何使用
+- 询问系统功能
+- 非数据相关的对话
+回答：CHAT
+
+如果用户是在：
+- 查询数据（如"查询所有客户"）
+- 统计数据（如"统计订单数量"）
+- 分析数据（如"销售额最高的客户"）
+- 需要从数据库获取信息
+回答：QUERY
+
+判断结果："""
+    
+    try:
+        # 使用模块级别的llm_client
+        response = llm_client.chat(
+            prompt=intent_prompt,
+            system_message="你是一个意图识别助手，专门判断用户是想聊天还是查询数据。只回答CHAT或QUERY。"
+        )
+        
+        response_clean = response.strip().upper()
+        
+        if "CHAT" in response_clean:
+            return True, "LLM判断为聊天意图"
+        elif "QUERY" in response_clean:
+            return False, "LLM判断为数据查询意图"
+        else:
+            # 如果LLM返回了意外内容，默认判断为查询（保守策略）
+            print(f"⚠️  LLM返回了意外的意图判断结果: {response_clean}，默认视为查询")
+            return False, "无法判断，默认视为查询"
+            
+    except Exception as e:
+        print(f"⚠️  意图识别失败: {e}，默认视为查询")
+        # 如果LLM调用失败，默认视为查询（保守策略）
+        return False, f"意图识别失败: {str(e)}"
+
+
 @monitor_performance
 def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
     """
@@ -99,19 +188,48 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
     M3: Now uses smart schema matching based on question.
     M4: Supports regeneration with critique feedback.
     M8: Enhanced with multi-table JOIN path generation.
+    M9.5: Detects chat questions and handles them separately.
     """
     question = state.get("question", "")
     critique = state.get("critique")  # M4: Get critique if available
     regeneration_count = state.get("regeneration_count", 0)  # M4: Track retries
 
-    print(f"\n=== Generate SQL Node (M3/M4/M8) ===")
+    print(f"\n=== Generate SQL Node (M3/M4/M8/M9.5) ===")
     print(f"Question: {question}")
+
+    # M9.5: 使用LLM判断用户意图，如果是聊天问题，直接使用通用聊天接口
+    if not critique:
+        is_chat, reason = detect_user_intent(question)
+        print(f"💭 意图识别: {reason}")
+        
+        if is_chat:
+            print("💬 检测到聊天意图，使用通用聊天接口（不使用SQL生成模板）")
+            
+            # 使用模块级别的llm_client（已在文件顶部导入），通用聊天接口，不使用SQL生成模板
+            chat_response = llm_client.chat(
+                prompt=question,
+                system_message="你是一个友好的AI助手，可以帮助用户进行自然语言对话。如果用户询问关于数据库查询的问题，请引导他们使用正确的查询格式。"
+            )
+            
+            print(f"Chat Response: {chat_response}")
+            
+            return {
+                **state,
+                "candidate_sql": None,
+                "is_chat_response": True,
+                "chat_response": chat_response,
+                "sql_generated_at": datetime.now().isoformat(),
+                "regeneration_count": 0,
+                "critique": None
+            }
+        else:
+            print("📊 检测到数据查询意图，继续使用SQL生成流程")
 
     if critique:
         print(f"Regeneration attempt: {regeneration_count + 1}")
         print(f"Using critique feedback for improvement")
     
-    # Load prompt template
+    # Load prompt template (only for SQL queries)
     prompt_template = load_prompt_template("nl2sql")
 
     # M3: 使用智能 schema（根据问题匹配相关表）
@@ -187,10 +305,25 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
 
         print(f"\nLLM Response:\n{response}")
 
-        # Extract SQL from response
-        candidate_sql = extract_sql_from_response(response)
+        # M9.5: Extract SQL from response - 现在返回SQL和有效性标志
+        candidate_sql, is_valid_sql = extract_sql_from_response(response)
 
         print(f"\nExtracted SQL:\n{candidate_sql}")
+        print(f"Is Valid SQL: {is_valid_sql}")
+        
+        # M9.5: 如果不是有效的SQL，说明LLM返回的是聊天回复
+        if not is_valid_sql:
+            print("⚠️  LLM返回的是聊天回复，不是SQL查询")
+            # 将LLM的回复作为答案，跳过SQL执行流程
+            return {
+                **state,
+                "candidate_sql": None,  # 没有SQL
+                "is_chat_response": True,  # 标记为聊天响应
+                "chat_response": candidate_sql,  # 保存聊天回复
+                "sql_generated_at": datetime.now().isoformat(),
+                "regeneration_count": regeneration_count if critique else 0,
+                "critique": None
+            }
         
         # M4: Increment regeneration count if this is a retry
         new_regeneration_count = regeneration_count + 1 if critique else 0
@@ -198,6 +331,8 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
         return {
             **state,
             "candidate_sql": candidate_sql,
+            "is_chat_response": False,  # 标记为SQL查询
+            "chat_response": None,
             "sql_generated_at": datetime.now().isoformat(),
             "regeneration_count": new_regeneration_count,  # M4: Track retries
             "critique": None  # Clear critique after using it
@@ -209,6 +344,8 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
         return {
             **state,
             "candidate_sql": None,
+            "is_chat_response": False,
+            "chat_response": None,
             "sql_generated_at": datetime.now().isoformat()
         }
 

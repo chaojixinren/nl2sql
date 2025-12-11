@@ -22,6 +22,65 @@ sys.path.insert(0, str(project_root))
 from tools.db import db_client
 
 
+def validate_identifier(identifier: str, max_length: int = 64) -> bool:
+    """
+    验证数据库标识符（表名、字段名）的安全性
+    防止SQL注入：只允许字母、数字、下划线和美元符号
+    
+    Args:
+        identifier: 要验证的标识符
+        max_length: 最大长度限制
+        
+    Returns:
+        True if valid, False otherwise
+    """
+    if not identifier or len(identifier) > max_length:
+        return False
+    
+    # MySQL标识符规则：字母、数字、下划线、美元符号，不能以数字开头
+    # 允许反引号包裹的标识符，但这里我们验证的是去除反引号后的内容
+    identifier_clean = identifier.strip('`')
+    
+    # 检查是否包含危险字符
+    if not re.match(r'^[a-zA-Z_$][a-zA-Z0-9_$]*$', identifier_clean):
+        return False
+    
+    # 检查是否包含SQL关键字（额外安全层）
+    sql_keywords = ['select', 'insert', 'update', 'delete', 'drop', 'alter', 
+                   'create', 'exec', 'execute', 'union', 'script', 'javascript']
+    if identifier_clean.lower() in sql_keywords:
+        return False
+    
+    return True
+
+
+def sanitize_identifier(identifier: str) -> str:
+    """
+    清理标识符，移除危险字符，保留反引号包裹
+    
+    Args:
+        identifier: 要清理的标识符
+        
+    Returns:
+        清理后的标识符
+    """
+    if not identifier:
+        return ""
+    
+    # 移除反引号
+    identifier_clean = identifier.strip('`')
+    
+    # 只保留字母、数字、下划线、美元符号
+    identifier_clean = re.sub(r'[^a-zA-Z0-9_$]', '', identifier_clean)
+    
+    # 如果为空或无效，返回空字符串
+    if not identifier_clean or not re.match(r'^[a-zA-Z_$]', identifier_clean):
+        return ""
+    
+    # 返回反引号包裹的标识符
+    return f"`{identifier_clean}`"
+
+
 class SchemaManager:
     """
     Schema 管理器
@@ -123,21 +182,27 @@ class SchemaManager:
         """
         foreign_keys = []
         
+        # 安全修复：验证表名，防止SQL注入
+        if not validate_identifier(table_name):
+            print(f"⚠️  Invalid table name: {table_name}")
+            return foreign_keys
+        
         # 方法1: 从数据库INFORMATION_SCHEMA获取（如果存在外键约束）
         try:
             conn = db_client._get_connection()
             cursor = conn.cursor()
             
-            cursor.execute(f"""
+            # 安全修复：使用参数化查询，防止SQL注入
+            cursor.execute("""
                 SELECT 
                     COLUMN_NAME,
                     REFERENCED_TABLE_NAME,
                     REFERENCED_COLUMN_NAME
                 FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-                WHERE TABLE_SCHEMA = '{db_client.mysql_config["database"]}'
-                AND TABLE_NAME = '{table_name}'
+                WHERE TABLE_SCHEMA = %s
+                AND TABLE_NAME = %s
                 AND REFERENCED_TABLE_NAME IS NOT NULL
-            """)
+            """, (db_client.mysql_config["database"], table_name))
             for row in cursor.fetchall():
                 foreign_keys.append({
                     "column": row["COLUMN_NAME"],
@@ -264,19 +329,49 @@ class SchemaManager:
     
     def _get_row_count(self, table_name: str) -> int:
         """获取表行数 (MySQL)"""
-        result = db_client.query(f"SELECT COUNT(*) as cnt FROM `{table_name}`")
+        # 安全修复：验证表名，防止SQL注入
+        if not validate_identifier(table_name):
+            print(f"⚠️  Invalid table name: {table_name}")
+            return 0
+        
+        # 安全修复：使用清理后的表名
+        safe_table_name = sanitize_identifier(table_name)
+        if not safe_table_name:
+            return 0
+        
+        result = db_client.query(f"SELECT COUNT(*) as cnt FROM {safe_table_name}")
         if result["ok"] and result["rows"]:
             return result["rows"][0]["cnt"]
         return 0
     
     def _get_sample_values(self, table_name: str, columns: List[Dict], limit: int) -> Dict[str, List]:
         """获取每个字段的示例值 (MySQL)"""
+        # 安全修复：验证表名，防止SQL注入
+        if not validate_identifier(table_name):
+            print(f"⚠️  Invalid table name: {table_name}")
+            return {}
+        
+        safe_table_name = sanitize_identifier(table_name)
+        if not safe_table_name:
+            return {}
+        
         sample_values = {}
         for col in columns:
             col_name = col["name"]
+            
+            # 安全修复：验证字段名，防止SQL注入
+            if not validate_identifier(col_name):
+                print(f"⚠️  Invalid column name: {col_name}")
+                continue
+            
+            safe_col_name = sanitize_identifier(col_name)
+            if not safe_col_name:
+                continue
+            
             try:
+                # 安全修复：使用清理后的表名和字段名
                 result = db_client.query(
-                    f"SELECT DISTINCT `{col_name}` FROM `{table_name}` WHERE `{col_name}` IS NOT NULL LIMIT {limit}"
+                    f"SELECT DISTINCT {safe_col_name} FROM {safe_table_name} WHERE {safe_col_name} IS NOT NULL LIMIT {limit}"
                 )
                 if result["ok"]:
                     values = [row[col_name] for row in result["rows"]]

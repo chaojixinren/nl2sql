@@ -35,6 +35,7 @@ class DatabaseClient:
             "database": config.get("mysql_database", "chinook"),
             "charset": "utf8mb4"
         }
+        # 安全修复：移除敏感信息（密码）的打印，只显示连接信息
         print(f"✓ Database configured (MySQL): {self.mysql_config['host']}:{self.mysql_config['port']}/{self.mysql_config['database']}")
 
     def _get_connection(self):
@@ -166,7 +167,16 @@ class DatabaseClient:
             return result
 
         except Exception as e:
-            result["error"] = f"Unexpected error: {str(e)}\n{traceback.format_exc()}"
+            # 安全修复：不返回详细错误信息，避免泄露系统内部信息
+            error_msg = str(e)
+            # 只返回用户友好的错误信息，不包含堆栈跟踪
+            if "max_execution_time" in error_msg.lower() or "timeout" in error_msg.lower():
+                result["error"] = "Query execution timeout"
+            elif "access denied" in error_msg.lower() or "permission" in error_msg.lower():
+                result["error"] = "Database access denied"
+            else:
+                result["error"] = "Database query failed"
+            result["code"] = "EXECUTION_ERROR"
             return result
 
     def get_table_names(self) -> List[str]:
@@ -189,11 +199,23 @@ class DatabaseClient:
 
     def get_table_schema(self, table_name: str) -> Dict[str, Any]:
         """Get schema information for a specific table."""
+        # 安全修复：验证表名，防止SQL注入
+        from tools.schema_manager import validate_identifier, sanitize_identifier
+        
+        if not validate_identifier(table_name):
+            print(f"⚠️  Invalid table name: {table_name}")
+            return {"table_name": table_name, "columns": []}
+        
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            cursor.execute(f"DESCRIBE `{table_name}`")
+            # 安全修复：使用清理后的标识符，虽然DESCRIBE不支持参数化，但已通过验证
+            safe_table_name = sanitize_identifier(table_name)
+            if not safe_table_name:
+                return {"table_name": table_name, "columns": []}
+            
+            cursor.execute(f"DESCRIBE {safe_table_name}")
             columns = cursor.fetchall()
             schema = {
                 "table_name": table_name,

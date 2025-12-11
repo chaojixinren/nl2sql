@@ -2,9 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **当前版本**: M9 - Answer Builder（答案生成）  
+> **当前版本**: M9.5 - 安全加固与聊天支持  
 > **状态**: ✅ 核心功能已实现并测试通过  
-> **说明**: M6 阶段（RAG增强）暂时跳过，现已完成M9阶段
+> **说明**: M6 阶段（RAG增强）暂时跳过，现已完成M9.5阶段（安全加固与聊天支持）
 
 ## 项目概述
 
@@ -145,6 +145,8 @@
 - **多轮对话澄清** (M7)：自动识别模糊问题，生成封闭式澄清问句，支持多轮交互
 - **多表 JOIN 生成** (M8)：基于外键关系自动生成 JOIN 路径，支持2-4表联结
 - **自然语言答案** (M9)：将SQL结果转换为易读的自然语言答案，包含结论、关键值和SQL说明
+- **安全加固** (M9.5)：SQL注入防护、敏感信息保护、输入验证、沙箱增强
+- **聊天支持** (M9.5)：智能识别聊天回复，区分SQL查询和普通对话
 
 ## 项目结构
 
@@ -156,22 +158,22 @@ rookie-nl2sql-main/
 ├── data/                # 数据目录
 │   └── schema.json     # 数据库 Schema（自动生成）
 ├── graphs/              # LangGraph 流程定义
-│   ├── base_graph.py   # 主流程图
-│   ├── state.py        # 状态定义
+│   ├── base_graph.py   # 主流程图 (M9.5: 添加聊天响应路由)
+│   ├── state.py        # 状态定义 (M9.5: 添加聊天响应字段)
 │   ├── nodes/          # 节点实现
-│   │   ├── generate_sql.py   # SQL 生成节点 (M1/M3/M8)
+│   │   ├── generate_sql.py   # SQL 生成节点 (M1/M3/M8/M9.5: 意图识别)
 │   │   ├── validate_sql.py   # SQL 验证节点 (M4)
 │   │   ├── critique_sql.py   # SQL 错误分析节点 (M4)
 │   │   ├── clarify.py        # 澄清与消歧节点 (M7)
-│   │   ├── execute_sql.py   # SQL 执行节点
-│   │   └── answer_builder.py # 答案生成节点 (M9)
+│   │   ├── execute_sql.py   # SQL 执行节点 (M5)
+│   │   └── answer_builder.py # 答案生成节点 (M9/M9.5: 聊天响应支持)
 │   └── utils/          # 工具函数
 │       └── performance.py  # 性能监控
 ├── tools/               # 工具模块
-│   ├── db.py           # 数据库客户端（MySQL）
-│   ├── llm_client.py   # LLM 客户端
-│   ├── schema_manager.py # Schema 管理器 (M3/M8: JOIN路径生成)
-│   └── sandbox.py      # SQL 沙箱安全模块 (M5)
+│   ├── db.py           # 数据库客户端（MySQL）(M9.5: 参数化查询、错误处理优化)
+│   ├── llm_client.py   # LLM 客户端 (M9.5: timeout处理优化)
+│   ├── schema_manager.py # Schema 管理器 (M3/M8: JOIN路径生成, M9.5: 标识符验证)
+│   └── sandbox.py      # SQL 沙箱安全模块 (M5/M9.5: 增强检查、日志脱敏)
 ├── prompts/             # Prompt 模板
 │   ├── nl2sql.txt      # SQL 生成提示词
 │   ├── critique.txt    # SQL 错误分析提示词 (M4)
@@ -179,12 +181,14 @@ rookie-nl2sql-main/
 │   └── answer.txt      # 答案生成提示词 (M9)
 ├── logs/                # 日志目录
 ├── nl2sql_chat.py       # 用户交互程序（推荐使用）
-├── test_graph.py        # 完整流程测试脚本
-├── test_guardrail.py    # SQL Guardrail 功能测试脚本 (M4)
-├── test_sandbox.py      # SQL Sandbox 功能测试脚本 (M5)
-├── test_clarify.py      # Dialog Clarification 功能测试脚本 (M7)
-├── test_join.py         # Multi-Table JOIN 功能测试脚本 (M8)
-├── test_answer.py       # Answer Builder 功能测试脚本 (M9)
+├── test/                # 测试脚本目录
+│   ├── interactive_test.py  # 交互式测试工具（支持M9.5聊天功能）
+│   ├── test_graph.py         # 完整流程测试脚本
+│   ├── test_guardrail.py     # SQL Guardrail 功能测试脚本 (M4)
+│   ├── test_sandbox.py       # SQL Sandbox 功能测试脚本 (M5)
+│   ├── test_clarify.py       # Dialog Clarification 功能测试脚本 (M7)
+│   ├── test_join.py          # Multi-Table JOIN 功能测试脚本 (M8)
+│   └── test_answer.py        # Answer Builder 功能测试脚本 (M9)
 ├── requirements.txt     # 依赖列表
 └── README.md           # 项目说明
 ```
@@ -203,11 +207,17 @@ rookie-nl2sql-main/
   ↓
 SQL 生成 (generate_sql) ← 智能 Schema 匹配
   ↓
+  ├─ M9.5: LLM意图识别 → 判断是聊天还是查询
+  │   ├─ 聊天意图 → 使用通用聊天接口 → 直接返回回复（跳过SQL流程）
+  │   └─ 查询意图 → 继续SQL生成流程
+  │
   ├─ M8: 检测多表查询 → 生成JOIN路径建议 → 增强Prompt
   │
-  └─ 调用LLM生成SQL
+  └─ 调用LLM生成SQL → M9.5: 检测LLM返回是否为有效SQL
+      ├─ 是聊天回复 → 直接返回（跳过SQL流程）
+      └─ 是SQL查询 → 继续验证流程
   ↓
-澄清判断 (clarify) ← M7: 判断是否需要澄清
+澄清判断 (clarify) ← M7: 判断是否需要澄清（仅SQL查询）
   ↓
   ├─ 需要澄清 → 生成澄清问题 → 输出给用户 → 等待回答
   │
@@ -215,9 +225,13 @@ SQL 生成 (generate_sql) ← 智能 Schema 匹配
   │
   └─ 不需要澄清 → SQL 验证 (validate_sql) ← 使用 sqlglot 验证语法 (M4)
        ↓
-    ├─ ✓ 通过 → SQL 执行 (execute_sql) → 答案生成 (answer_builder) ← M9: 生成自然语言答案
-    │                                                              ↓
-    │                                                         结果输出 (echo) → END
+    ├─ ✓ 通过 → SQL 执行 (execute_sql) ← M5/M9.5: 安全沙箱检查（增强）
+    │      ↓
+    │   M9.5: 参数化查询、标识符验证、敏感信息保护
+    │      ↓
+    │   答案生成 (answer_builder) ← M9/M9.5: 生成自然语言答案（支持聊天响应）
+    │      ↓
+    │   结果输出 (echo) → END
     │
     └─ ✗ 失败 → 错误分析 (critique_sql) ← LLM 分析错误 (M4)
          ↓
@@ -236,7 +250,7 @@ SQL 生成 (generate_sql) ← 智能 Schema 匹配
 
 - **LangGraph**: 状态图编排框架，用于构建 NL2SQL 工作流
 - **LangChain**: LLM 应用开发框架
-- **pymysql**: MySQL 数据库驱动
+- **pymysql**: MySQL 数据库驱动（M9.5: 支持参数化查询）
 - **sqlglot**: SQL 解析和验证库
 
 ### 配置管理
@@ -263,12 +277,14 @@ SQL 生成 (generate_sql) ← 智能 Schema 匹配
 - **模型层**：将自然语言解析为 SQL 意图（表/字段选择、过滤、聚合、排序、连接）。
 - **工具层**：集成数据库 Schema 管理、智能表匹配、字段检索等工具。
 - **验证层**：使用 sqlglot 进行 SQL 语法验证，LLM 驱动的错误分析和修复（M4）。
-- **执行层**：在只读通道执行校验后的 SQL，返回结果集。
+- **执行层**：在只读通道执行校验后的 SQL，返回结果集（M9.5: 参数化查询、安全加固）。
 - **展示层**：命令行输出查询、SQL、日志与结果（未来可扩展为 Web 界面）。
+- **安全层 (M9.5)**：SQL注入防护、输入验证、敏感信息保护、沙箱增强。
+- **意图识别层 (M9.5)**：LLM驱动的意图识别，区分聊天和查询，智能路由。
 
 ### 技术路线
 
-- **解析策略**：基于关键词和模式的意图识别，支持问题类型分类。
+- **解析策略**：基于关键词和模式的意图识别，支持问题类型分类（M9.5: 增强LLM意图识别）。
 - **提示工程**：注入数据库 schema 与示例查询，约束输出仅产出 SQL。
 - **安全与健壮**：只读白名单、拒绝 DML（增删改），仅允许 SELECT 查询。
 - **反馈闭环**：错误捕获→分析→重写→再次校验执行（M4 已实现）。
@@ -277,6 +293,8 @@ SQL 生成 (generate_sql) ← 智能 Schema 匹配
 - **Dialog Clarification**：模糊问题识别→生成澄清问句→多轮对话→问题整合（M7）。
 - **Multi-Table JOIN**：外键推断→关系图构建→JOIN路径生成→Few-shot增强（M8）。
 - **Answer Builder**：数据摘要→关键值提取→LLM生成答案→包含结论、关键值和SQL说明（M9）。
+- **Security Hardening**：SQL注入防护→参数化查询→标识符验证→敏感信息保护（M9.5）。
+- **Chat Support**：聊天响应识别→智能路由→区分查询和对话（M9.5）。
 - **评估机制**：测试脚本支持端到端验证，衡量可执行率、正确率与耗时。
 
 ## 通过本项目可以学到
@@ -290,7 +308,20 @@ SQL 生成 (generate_sql) ← 智能 Schema 匹配
 
 ## 版本历史
 
-### M9 - Answer Builder（当前版本）✅
+### M9.5 - 安全加固与聊天支持（当前版本）✅
+
+- ✅ 安全漏洞修复：修复SQL注入风险，使用参数化查询和标识符验证
+- ✅ 敏感信息保护：移除日志和打印中的敏感信息，限制日志长度
+- ✅ 输入验证增强：添加用户输入长度限制和字符验证
+- ✅ SQL沙箱增强：去除注释后检查，增强危险模式检测，禁止访问系统数据库
+- ✅ 错误处理优化：避免泄露系统内部信息，返回用户友好的错误消息
+- ✅ 聊天响应支持：使用LLM意图识别，智能区分聊天和查询，聊天问题使用通用接口
+- ✅ 测试文件修复：修复所有测试文件的模块导入路径问题
+- ✅ 代码质量提升：添加中文注释说明安全修复原因
+- ✅ 流程图更新：更新流程图反映M9.5的新功能（意图识别、聊天响应路由）
+- ✅ 文档完善：更新README和测试脚本说明，反映M9.5的所有功能
+
+### M9 - Answer Builder ✅
 
 - ✅ 数据摘要格式化：智能处理空结果、小数据集（≤10行）和大数据集（>10行）
 - ✅ 关键值提取：自动提取数值字段的统计信息（最大值、最小值、平均值、总计等）

@@ -85,13 +85,19 @@ class LLMClient:
 
         # Override client parameters if provided
         if kwargs:
+            # 安全修复：检查timeout属性是否存在，避免AttributeError
+            timeout_value = getattr(self.client, 'timeout', None)
+            if timeout_value is None:
+                # 如果没有timeout属性，使用配置中的timeout或默认值
+                timeout_value = getattr(self, 'timeout', 30)
+            
             client = ChatOpenAI(
                 model=self.model,
                 api_key=self.client.openai_api_key,
                 base_url=self.client.openai_api_base,
                 temperature=kwargs.get("temperature", self.client.temperature),
                 max_tokens=kwargs.get("max_tokens", self.client.max_tokens),
-                timeout=self.client.timeout
+                timeout=timeout_value
             )
         else:
             client = self.client

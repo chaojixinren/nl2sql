@@ -62,3 +62,7 @@ class NL2SQLState(TypedDict):
     # Answer Generation (M9)
     answer: Optional[str]  # 生成的自然语言答案
     answer_generated_at: Optional[str]  # 答案生成时间
+    
+    # Chat Response Support (M9.5)
+    is_chat_response: Optional[bool]  # 是否是聊天响应（而非SQL查询）
+    chat_response: Optional[str]  # LLM的聊天回复内容

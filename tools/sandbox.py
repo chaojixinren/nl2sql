@@ -25,10 +25,18 @@ def log_security_event(event: Dict[str, Any]) -> None:
     log_dir.mkdir(exist_ok=True)
     log_file = log_dir / "security_log.jsonl"
     
-    event["timestamp"] = datetime.now().isoformat()
+    # 安全修复：记录安全事件但不记录完整SQL（可能包含敏感数据）
+    # 只记录SQL的前100个字符用于调试
+    log_event = event.copy()
+    if "sql" in log_event:
+        sql = log_event["sql"]
+        # 截断SQL，只保留前100个字符
+        log_event["sql"] = sql[:100] + "..." if len(sql) > 100 else sql
+    
+    log_event["timestamp"] = datetime.now().isoformat()
     
     with open(log_file, "a", encoding="utf-8") as f:
-        f.write(json.dumps(event, ensure_ascii=False) + "\n")
+        f.write(json.dumps(log_event, ensure_ascii=False) + "\n")
 
 
 def check_sql_safety(
@@ -59,8 +67,16 @@ def check_sql_safety(
     
     sql_lower = sql.strip().lower()
     
-    # Check 1: Only SELECT statements allowed
-    if not sql_lower.startswith("select"):
+    # 安全修复：增强SQL检查，去除注释和空白后检查
+    # 移除SQL注释（单行和多行）
+    sql_clean = re.sub(r'--.*?$', '', sql, flags=re.MULTILINE)  # 移除单行注释
+    sql_clean = re.sub(r'/\*.*?\*/', '', sql_clean, flags=re.DOTALL)  # 移除多行注释
+    sql_clean = sql_clean.strip()
+    sql_clean_lower = sql_clean.lower()
+    
+    # Check 1: Only SELECT statements allowed (增强检查)
+    # 安全修复：去除注释和空白后检查，防止通过注释绕过
+    if not sql_clean_lower.startswith("select"):
         return {
             "ok": False,
             "code": "SANDBOX_NON_SELECT",
@@ -68,15 +84,19 @@ def check_sql_safety(
         }
     
     # Check 2: Dangerous patterns (check before keywords for better error classification)
+    # 安全修复：增强危险模式检测，使用清理后的SQL
     dangerous_patterns = [
-        (r';\s*(drop|delete|update|insert|alter|create)', "Multiple statements with DML"),
+        (r';\s*(drop|delete|update|insert|alter|create|truncate|exec|execute)', "Multiple statements with DML"),
         (r'union\s+.*select', "UNION injection attempt"),
         (r'/\*.*\*/', "SQL comment injection"),
         (r'--\s', "SQL comment injection"),
+        (r'into\s+outfile', "File system access attempt"),
+        (r'load\s+data', "Data loading attempt"),
+        (r'load_file\s*\(', "File reading function"),
     ]
     
     for pattern, reason in dangerous_patterns:
-        if re.search(pattern, sql_lower, re.IGNORECASE | re.DOTALL):
+        if re.search(pattern, sql_clean_lower, re.IGNORECASE | re.DOTALL):
             return {
                 "ok": False,
                 "code": "SANDBOX_DANGEROUS_PATTERN",
@@ -84,12 +104,14 @@ def check_sql_safety(
             }
     
     # Check 3: Forbidden keywords (after pattern check)
+    # 安全修复：增强禁止关键字列表，使用清理后的SQL检查
     default_forbidden = [
         "insert", "update", "delete", "drop", "alter", "truncate",
         "create", "grant", "revoke", "rename", "replace",
         "into outfile", "load data", "sleep", "benchmark",
         "exec", "execute", "call", "procedure", "function",
-        "lock", "unlock", "flush", "kill", "shutdown"
+        "lock", "unlock", "flush", "kill", "shutdown",
+        "information_schema", "mysql", "sys", "performance_schema"  # 禁止访问系统数据库
     ]
     
     forbidden = forbidden_keywords if forbidden_keywords is not None else default_forbidden
@@ -97,7 +119,7 @@ def check_sql_safety(
     for keyword in forbidden:
         # Use word boundary matching to avoid false positives
         pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
-        if re.search(pattern, sql_lower):
+        if re.search(pattern, sql_clean_lower):
             return {
                 "ok": False,
                 "code": "SANDBOX_FORBIDDEN_KEYWORD",

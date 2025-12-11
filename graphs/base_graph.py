@@ -44,9 +44,15 @@ def log_node(state: NL2SQLState) -> NL2SQLState:
 
     log_file = log_dir / "query_log.jsonl"
 
+    # 安全修复：记录日志但不包含敏感信息，用户问题可能包含敏感数据但这是业务需要
+    # 建议在生产环境中对日志进行加密或脱敏处理
+    question = state.get("question", "")
+    # 安全修复：限制日志中问题长度，防止日志文件过大
+    question_log = question[:500] if len(question) > 500 else question
+    
     log_entry = {
         "session_id": state.get("session_id"),
-        "question": state.get("question"),
+        "question": question_log,  # 截断后的问题
         "intent": state.get("intent"),
         "timestamp": state.get("timestamp")
     }
@@ -102,6 +108,23 @@ def parse_intent_node(state: NL2SQLState) -> NL2SQLState:
         "intent": intent,
         "timestamp": datetime.now().isoformat()
     }
+
+
+def should_handle_chat_response(state: NL2SQLState) -> str:
+    """
+    M9.5: 判断是否是聊天响应，如果是则直接返回答案，否则继续SQL流程
+    
+    Returns:
+        "chat" if LLM returned a chat response instead of SQL
+        "continue" if it's a valid SQL query
+    """
+    is_chat_response = state.get("is_chat_response", False)
+    
+    if is_chat_response:
+        print("💬 检测到聊天响应，直接返回LLM回复")
+        return "chat"
+    
+    return "continue"
 
 
 def echo_node(state: NL2SQLState) -> NL2SQLState:
@@ -207,8 +230,18 @@ def build_graph() -> StateGraph:
     workflow.add_edge("parse_intent", "log") 
     workflow.add_edge("log", "generate_sql")
     
+    # M9.5: After generating SQL, check if it's a chat response or SQL query
+    workflow.add_conditional_edges(
+        "generate_sql",
+        should_handle_chat_response,  # M9.5: 判断是否是聊天响应
+        {
+            "chat": "answer_builder",  # 如果是聊天响应，直接生成答案
+            "continue": "clarify"  # 如果是SQL查询，继续澄清流程
+        }
+    )
+    
     # M7: After generating SQL, check if clarification is needed
-    workflow.add_edge("generate_sql", "clarify")
+    # (This is now only reached if it's a valid SQL query)
     
     # M7: Conditional edge after clarification
     workflow.add_conditional_edges(
@@ -288,7 +321,10 @@ def run_query(question: str, session_id: str = None, user_id: str = None, clarif
         "normalized_question": None,
         # M9: Answer generation fields
         "answer": None,
-        "answer_generated_at": None
+        "answer_generated_at": None,
+        # M9.5: Chat response fields
+        "is_chat_response": False,
+        "chat_response": None
     }
 
     # Run graph
