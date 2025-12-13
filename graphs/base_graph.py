@@ -112,17 +112,34 @@ def parse_intent_node(state: NL2SQLState) -> NL2SQLState:
 
 def should_handle_chat_response(state: NL2SQLState) -> str:
     """
-    M9.5: 判断是否是聊天响应，如果是则直接返回答案，否则继续SQL流程
+    M9.5/M9.75: 统一的上下文处理决策函数
+    整合了聊天响应判断和澄清判断
     
     Returns:
         "chat" if LLM returned a chat response instead of SQL
-        "continue" if it's a valid SQL query
+        "clarify" if clarification is needed
+        "continue" if it's a valid SQL query and no clarification needed
     """
+    # 1. 检查是否是聊天响应
     is_chat_response = state.get("is_chat_response", False)
-    
     if is_chat_response:
         print("💬 检测到聊天响应，直接返回LLM回复")
         return "chat"
+    
+    # 2. M9.75: 检查是否需要澄清（基于上下文）
+    session_id = state.get("session_id")
+    if session_id:
+        from graphs.utils.context_memory import get_context_manager
+        context_manager = get_context_manager(session_id)
+        
+        clarification_check = context_manager.check_needs_clarification(
+            question=state.get("question", ""),
+            candidate_sql=state.get("candidate_sql")
+        )
+        
+        if clarification_check.get("needs_clarification", False):
+            print(f"⚠️  需要澄清: {clarification_check.get('reasons', [])}")
+            return "clarify"
     
     return "continue"
 
@@ -230,20 +247,18 @@ def build_graph() -> StateGraph:
     workflow.add_edge("parse_intent", "log") 
     workflow.add_edge("log", "generate_sql")
     
-    # M9.5: After generating SQL, check if it's a chat response or SQL query
+    # M9.5/M9.75: After generating SQL, unified decision: chat response, clarification, or continue
     workflow.add_conditional_edges(
         "generate_sql",
-        should_handle_chat_response,  # M9.5: 判断是否是聊天响应
+        should_handle_chat_response,  # M9.5/M9.75: 统一的上下文处理决策
         {
             "chat": "answer_builder",  # 如果是聊天响应，直接生成答案
-            "continue": "clarify"  # 如果是SQL查询，继续澄清流程
+            "clarify": "clarify",  # 如果需要澄清，进入澄清流程
+            "continue": "validate_sql"  # 如果不需要澄清，直接验证SQL
         }
     )
     
-    # M7: After generating SQL, check if clarification is needed
-    # (This is now only reached if it's a valid SQL query)
-    
-    # M7: Conditional edge after clarification
+    # M7/M9.75: Conditional edge after clarification
     workflow.add_conditional_edges(
         "clarify",
         should_ask_clarification,  # Decision function
@@ -279,15 +294,34 @@ def build_graph() -> StateGraph:
     return graph
 
 
-def run_query(question: str, session_id: str = None, user_id: str = None, clarification_answer: str = None) -> NL2SQLState:
+def run_query(question: str, session_id: str = None, user_id: str = None, 
+              clarification_answer: str = None, 
+              conversation_history: Optional[List[Dict[str, Any]]] = None) -> NL2SQLState:
     """
     Run a single query through the graph.
     M4: Now includes validation and self-healing.
     M7: Now supports clarification answers and user_id.
     M9: Now includes natural language answer generation.
+    M9.75: Now supports context memory with conversation history.
     """
     if session_id is None:
         session_id = str(uuid.uuid4())
+
+    # M9.75: 初始化上下文记忆管理器
+    from graphs.utils.context_memory import get_context_manager
+    context_manager = get_context_manager(session_id, max_history=10)
+    
+    # M9.75: 如果有传入的历史，导入到管理器
+    if conversation_history:
+        for entry in conversation_history:
+            context_manager.conversation_history.append(entry)
+        context_manager._trim_history()
+    
+    # M9.75: 添加当前问题到历史（如果还没有添加）
+    # 注意：这里先不添加，等确认是查询意图后再添加
+    
+    # 获取当前历史（用于初始化state）
+    current_history = context_manager.get_all_history()
 
     # Build graph
     graph = build_graph()
@@ -310,7 +344,7 @@ def run_query(question: str, session_id: str = None, user_id: str = None, clarif
         "max_regenerations": 3,         # M4
         # M7: Use existing fields
         "user_id": user_id,  
-        "dialog_history": [],  
+        "dialog_history": current_history,  # M9.75: 使用上下文记忆管理器的历史
         # M7: Clarification fields
         "needs_clarification": None,
         "clarification_question": None,

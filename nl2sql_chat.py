@@ -28,6 +28,10 @@ class NL2SQLChat:
         self.current_state: Optional[NL2SQLState] = None
         self.show_sql = False  # 是否显示SQL（默认隐藏）
         
+        # M9.75: 初始化上下文记忆管理器
+        from graphs.utils.context_memory import get_context_manager
+        self.context_manager = get_context_manager(self.session_id, max_history=10)
+        
     def print_welcome(self):
         """打印欢迎信息"""
         print("\n" + "=" * 60)
@@ -36,6 +40,8 @@ class NL2SQLChat:
         print("💡 提示：")
         print("  - 直接用自然语言提问，例如：'查询每个客户的订单数量'")
         print("  - 也可以进行普通对话，例如：'你好'、'你是谁'")
+        print("  - 支持多轮对话，可以使用'那'、'他们'等指代词")
+        print("  - 例如：'查询客户' → '那销售额最高的呢？'")
         print("  - 输入 'help' 查看帮助")
         print("  - 输入 'quit' 退出")
         print("=" * 60 + "\n")
@@ -55,6 +61,10 @@ class NL2SQLChat:
         print("    • 你好")
         print("    • 你是谁")
         print("    • 如何使用这个系统")
+        print("\n  多轮对话（M9.75: 上下文记忆）：")
+        print("    • 查询每个客户的订单数量")
+        print("    • 那销售额最高的客户是谁？")
+        print("    • 他的订单详情呢？")
         print("\n命令：")
         print("  help          - 显示此帮助")
         print("  quit / exit   - 退出程序")
@@ -131,18 +141,29 @@ class NL2SQLChat:
     def process_query(self, question: str, clarification_answer: Optional[str] = None):
         """处理查询（静默模式，不显示中间步骤）"""
         try:
+            # M9.75: 获取当前对话历史
+            conversation_history = self.context_manager.get_all_history()
+            
             # 重定向所有输出到空设备，隐藏中间步骤
             f = io.StringIO()
             with redirect_stdout(f), redirect_stderr(f):
-                # 静默运行查询
+                # 静默运行查询，传入历史上下文
                 result = run_query(
                     question=question,
                     session_id=self.session_id,
                     user_id=self.user_id,
-                    clarification_answer=clarification_answer
+                    clarification_answer=clarification_answer,
+                    conversation_history=conversation_history  # M9.75: 传递历史上下文
                 )
             
             self.current_state = result
+            
+            # M9.75: 更新上下文管理器（从result中获取最新的历史）
+            updated_history = result.get('dialog_history', [])
+            if updated_history:
+                # 同步历史到上下文管理器
+                self.context_manager.conversation_history = updated_history
+                self.context_manager._trim_history()
             
             # 检查是否需要澄清（澄清问题需要用户交互，不能完全静默）
             if result.get('needs_clarification'):

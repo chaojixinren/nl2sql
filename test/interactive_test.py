@@ -26,6 +26,10 @@ class InteractiveTester:
         self.dialog_history = []
         self.current_state: Optional[NL2SQLState] = None
         
+        # M9.75: 初始化上下文记忆管理器
+        from graphs.utils.context_memory import get_context_manager
+        self.context_manager = get_context_manager(self.session_id, max_history=10)
+        
     def print_header(self):
         """打印欢迎信息"""
         print("\n" + "=" * 70)
@@ -43,6 +47,10 @@ class InteractiveTester:
         print("    * SQL注入防护")
         print("    * 智能聊天响应识别")
         print("    * 敏感信息保护")
+        print("  - 上下文记忆与澄清整合 (M9.75)")
+        print("    * 跨查询上下文记忆")
+        print("    * 基于上下文的智能澄清")
+        print("    * 指代词理解（那、他们、刚才等）")
         print("\n输入 'help' 查看命令，输入 'quit' 退出")
         print("=" * 70 + "\n")
     
@@ -172,26 +180,58 @@ class InteractiveTester:
             print("⚠️  还没有生成答案")
     
     def display_history(self):
-        """显示对话历史"""
-        if not self.dialog_history:
+        """显示对话历史（M9.75: 使用上下文管理器的历史）"""
+        # M9.75: 使用上下文管理器的历史
+        history = self.context_manager.get_all_history()
+        
+        if not history:
             print("⚠️  对话历史为空")
             return
         
         print("\n" + "=" * 70)
-        print("💬 对话历史")
+        print("💬 对话历史 (M9.75: 上下文记忆)")
         print("=" * 70)
         
-        for i, entry in enumerate(self.dialog_history, 1):
+        for i, entry in enumerate(history, 1):
             role = entry.get('role', 'unknown')
             content = entry.get('content', '')
             timestamp = entry.get('timestamp', '')
+            entry_type = entry.get('type', '')
             
+            # 格式化时间戳
+            if timestamp:
+                try:
+                    dt = datetime.fromisoformat(timestamp)
+                    time_str = dt.strftime("%H:%M:%S")
+                except:
+                    time_str = timestamp[:8] if len(timestamp) > 8 else timestamp
+            else:
+                time_str = ""
+            
+            # 根据类型显示不同的图标
             if role == 'user':
-                print(f"\n[{i}] 👤 用户 ({timestamp})")
+                if entry_type == 'query':
+                    print(f"\n[{i}] 👤 用户查询 ({time_str})")
+                elif entry_type == 'clarification_answer':
+                    print(f"\n[{i}] 💬 澄清回答 ({time_str})")
+                else:
+                    print(f"\n[{i}] 👤 用户 ({time_str})")
             elif role == 'assistant':
-                print(f"\n[{i}] 🤖 助手 ({timestamp})")
-            elif role == 'clarification':
-                print(f"\n[{i}] ❓ 澄清问题 ({timestamp})")
+                if entry_type == 'answer':
+                    print(f"\n[{i}] 🤖 系统答案 ({time_str})")
+                    # 显示SQL（如果有）
+                    sql = entry.get('sql')
+                    if sql:
+                        print(f"   SQL: {sql[:100]}..." if len(sql) > 100 else f"   SQL: {sql}")
+                elif entry_type == 'clarification':
+                    print(f"\n[{i}] ❓ 澄清问题 ({time_str})")
+                    options = entry.get('options', [])
+                    if options:
+                        print(f"   选项: {', '.join(options)}")
+                elif entry_type == 'chat':
+                    print(f"\n[{i}] 💬 聊天回复 ({time_str})")
+                else:
+                    print(f"\n[{i}] 🤖 助手 ({time_str})")
             
             # 显示内容（截断长内容）
             if len(content) > 200:
@@ -199,17 +239,32 @@ class InteractiveTester:
             else:
                 print(f"   {content}")
         
-        print("\n" + "=" * 70 + "\n")
+        print(f"\n总计: {len(history)} 条记录")
+        print("=" * 70 + "\n")
     
     def display_session_info(self):
-        """显示会话信息"""
+        """显示会话信息（M9.75: 包含上下文记忆信息）"""
         print("\n" + "=" * 70)
         print("🔍 会话信息")
         print("=" * 70)
         print(f"会话ID: {self.session_id}")
         print(f"用户ID: {self.user_id}")
-        print(f"对话轮次: {len(self.dialog_history)}")
+        print(f"对话轮次: {len(self.context_manager.get_all_history())}")
+        print(f"最大历史长度: {self.context_manager.max_history}")
         print(f"开始时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("\n上下文记忆状态:")
+        history = self.context_manager.get_all_history()
+        if history:
+            query_count = sum(1 for h in history if h.get('type') == 'query')
+            answer_count = sum(1 for h in history if h.get('type') == 'answer')
+            clarification_count = sum(1 for h in history if h.get('type') == 'clarification')
+            chat_count = sum(1 for h in history if h.get('type') == 'chat')
+            print(f"  - 查询: {query_count} 次")
+            print(f"  - 答案: {answer_count} 次")
+            print(f"  - 澄清: {clarification_count} 次")
+            print(f"  - 聊天: {chat_count} 次")
+        else:
+            print("  - 暂无历史记录")
         print("=" * 70 + "\n")
     
     def handle_clarification(self, state: NL2SQLState) -> Optional[str]:
@@ -261,7 +316,10 @@ class InteractiveTester:
         print(f"🔍 处理查询: {question}")
         print(f"{'=' * 70}\n")
         
-        # 记录用户问题
+            # M9.75: 获取当前对话历史（从上下文管理器）
+        conversation_history = self.context_manager.get_all_history()
+        
+        # 记录用户问题（用于本地显示）
         self.dialog_history.append({
             'role': 'user',
             'content': question,
@@ -269,29 +327,37 @@ class InteractiveTester:
         })
         
         try:
-            # 运行查询
+            # M9.75: 运行查询，传入历史上下文
             result = run_query(
                 question=question,
                 session_id=self.session_id,
                 user_id=self.user_id,
-                clarification_answer=clarification_answer
+                clarification_answer=clarification_answer,
+                conversation_history=conversation_history  # M9.75: 传递历史上下文
             )
             
             self.current_state = result
+            
+            # M9.75: 更新上下文管理器（从result中获取最新的历史）
+            updated_history = result.get('dialog_history', [])
+            if updated_history:
+                # 同步历史到上下文管理器
+                self.context_manager.conversation_history = updated_history
+                self.context_manager._trim_history()
             
             # 检查是否需要澄清
             if result.get('needs_clarification'):
                 clarification_answer = self.handle_clarification(result)
                 
                 if clarification_answer:
-                    # 记录用户回答
+                    # 记录用户回答（用于本地显示）
                     self.dialog_history.append({
                         'role': 'user',
                         'content': f"澄清回答: {clarification_answer}",
                         'timestamp': datetime.now().isoformat()
                     })
                     
-                    # 重新运行查询，带上澄清答案
+                    # M9.75: 重新运行查询，带上澄清答案（历史会自动传递）
                     return self.run_query_interactive(question, clarification_answer)
                 else:
                     print("⚠️  跳过澄清，继续处理...")

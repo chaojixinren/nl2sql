@@ -117,6 +117,29 @@ GROUP BY al.AlbumId, al.Title, a.Name;
 - **JOIN条件**：确保使用正确的外键关系（参考Schema中的外键信息）
 - **字段引用**：使用别名.字段名（如 c.CustomerId）避免歧义
 
+### 示例 11: 推荐类查询（包含关联信息）
+问题: 给我推荐一些专辑
+SQL:
+```sql
+SELECT al.Title as album_title, a.Name as artist_name
+FROM album al
+INNER JOIN artist a ON al.ArtistId = a.ArtistId
+ORDER BY al.AlbumId
+LIMIT 5;
+```
+**注意**：推荐类查询应该JOIN相关表获取可读的名称信息（如艺术家名称），而不是只返回ID。
+
+### 示例 12: 列表类查询（包含关联信息）
+问题: 列出所有客户及其订单数量
+SQL:
+```sql
+SELECT c.FirstName, c.LastName, COUNT(i.InvoiceId) as order_count
+FROM customer c
+LEFT JOIN invoice i ON c.CustomerId = i.CustomerId
+GROUP BY c.CustomerId, c.FirstName, c.LastName;
+```
+**注意**：列表类查询应该包含有意义的名称字段（如客户姓名），让结果更易读。
+
 ## 要求
 1. **只返回SQL语句**，不要有任何解释或说明
 2. 使用标准SQL语法
@@ -126,6 +149,13 @@ GROUP BY al.AlbumId, al.Title, a.Name;
 6. 如果需要限制数量，使用LIMIT
 7. SQL语句必须以分号结尾
 8. 优先使用具体字段名而非SELECT *
+9. **重要：对于推荐类、列表类查询，应该包含可读的名称字段，而不是只返回ID**
+   - 例如：推荐专辑时，应该JOIN artist表获取艺术家名称，而不是只返回ArtistId
+   - 例如：推荐客户时，应该包含客户姓名，而不是只返回CustomerId
+   - 如果查询结果需要展示给用户，优先选择有意义的名称字段，而不是技术性的ID字段
+
+## 对话历史
+{context_history}
 
 ## 用户问题
 {question}

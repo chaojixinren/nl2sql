@@ -135,10 +135,15 @@ def clarify_node(state: NL2SQLState) -> NL2SQLState:
     max_clarifications = state.get("max_clarifications", 3)
     
     # M7: 使用已有的 dialog_history 字段
+    # M9.75: 使用上下文记忆管理器
+    session_id = state.get("session_id")
+    from graphs.utils.context_memory import get_context_manager
+    context_manager = get_context_manager(session_id) if session_id else None
+    
     dialog_history = state.get("dialog_history") or []
     user_id = state.get("user_id")  # M7: 使用已有的 user_id 字段
     
-    print(f"\n=== Clarify Node (M7) ===")
+    print(f"\n=== Clarify Node (M7/M9.75) ===")
     print(f"Question: {question}")
     if user_id:
         print(f"User ID: {user_id}")
@@ -164,20 +169,25 @@ def clarify_node(state: NL2SQLState) -> NL2SQLState:
         
         normalized_question = f"{original_question}（{clarification_answer}）"
         
-        # 更新对话历史（使用已有的 dialog_history）
-        updated_history = dialog_history.copy()
-        updated_history.append({
-            "role": "assistant",
-            "content": state.get("clarification_question", ""),
-            "timestamp": datetime.now().isoformat(),
-            "type": "clarification"
-        })
-        updated_history.append({
-            "role": "user",
-            "content": clarification_answer,
-            "timestamp": datetime.now().isoformat(),
-            "type": "clarification_answer"
-        })
+        # M9.75: 使用上下文记忆管理器更新对话历史
+        if context_manager:
+            context_manager.add_clarification_answer(clarification_answer)
+            updated_history = context_manager.get_all_history()
+        else:
+            # 回退到原有逻辑
+            updated_history = dialog_history.copy()
+            updated_history.append({
+                "role": "assistant",
+                "content": state.get("clarification_question", ""),
+                "timestamp": datetime.now().isoformat(),
+                "type": "clarification"
+            })
+            updated_history.append({
+                "role": "user",
+                "content": clarification_answer,
+                "timestamp": datetime.now().isoformat(),
+                "type": "clarification_answer"
+            })
         
         return {
             **state,
@@ -220,15 +230,22 @@ def clarify_node(state: NL2SQLState) -> NL2SQLState:
         reasons_text = "\n".join(f"- {r}" for r in clarification_check["reasons"])
         clarification_type = clarification_check["clarification_type"]
         
-        # 使用已有的 dialog_history 构建历史上下文
-        history_text = ""
-        if dialog_history:
-            history_text = "\n## 对话历史\n"
-            for entry in dialog_history[-5:]:  # 只取最近5轮
-                role = entry.get("role", "unknown")
-                content = entry.get("content", "")
-                timestamp = entry.get("timestamp", "")
-                history_text += f"[{timestamp}] {role}: {content}\n"
+        # M9.75: 使用上下文记忆管理器格式化历史上下文
+        if context_manager:
+            history_text = context_manager.format_context_for_clarification(
+                question=question,
+                candidate_sql=candidate_sql
+            )
+        else:
+            # 回退到原有逻辑
+            history_text = ""
+            if dialog_history:
+                history_text = "\n## 对话历史\n"
+                for entry in dialog_history[-5:]:  # 只取最近5轮
+                    role = entry.get("role", "unknown")
+                    content = entry.get("content", "")
+                    timestamp = entry.get("timestamp", "")
+                    history_text += f"[{timestamp}] {role}: {content}\n"
         
         prompt = prompt_template.format(
             question=question,
@@ -251,21 +268,30 @@ def clarify_node(state: NL2SQLState) -> NL2SQLState:
             for i, opt in enumerate(clarification_options, 1):
                 print(f"    {i}. {opt}")
         
-        # 更新对话历史（使用已有的 dialog_history）
-        updated_history = dialog_history.copy()
-        updated_history.append({
-            "role": "user",
-            "content": question,
-            "timestamp": datetime.now().isoformat(),
-            "type": "question"
-        })
-        updated_history.append({
-            "role": "assistant",
-            "content": clarification_question,
-            "timestamp": datetime.now().isoformat(),
-            "type": "clarification",
-            "options": clarification_options
-        })
+        # M9.75: 使用上下文记忆管理器更新对话历史
+        if context_manager:
+            context_manager.add_clarification(
+                clarification_question=clarification_question,
+                options=clarification_options,
+                reasons=clarification_check["reasons"]
+            )
+            updated_history = context_manager.get_all_history()
+        else:
+            # 回退到原有逻辑
+            updated_history = dialog_history.copy()
+            updated_history.append({
+                "role": "user",
+                "content": question,
+                "timestamp": datetime.now().isoformat(),
+                "type": "question"
+            })
+            updated_history.append({
+                "role": "assistant",
+                "content": clarification_question,
+                "timestamp": datetime.now().isoformat(),
+                "type": "clarification",
+                "options": clarification_options
+            })
         
         return {
             **state,

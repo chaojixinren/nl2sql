@@ -194,10 +194,12 @@ def answer_builder_node(state: NL2SQLState) -> NL2SQLState:
     # M9.5: 如果是聊天响应，直接使用LLM的回复
     if is_chat_response and chat_response:
         print("💬 使用聊天回复作为答案")
+        # M9.75: 聊天响应已经在 generate_sql_node 中添加到上下文记忆
         return {
             **state,
             "answer": chat_response,
-            "answer_generated_at": datetime.now().isoformat()
+            "answer_generated_at": datetime.now().isoformat(),
+            "dialog_history": state.get("dialog_history", [])  # 保持历史
         }
     
     # Check if execution result exists
@@ -300,10 +302,35 @@ def answer_builder_node(state: NL2SQLState) -> NL2SQLState:
         
         print(f"✓ Answer generated ({len(answer)} characters)")
         
+        # M9.75: 更新上下文记忆，添加答案
+        session_id = state.get("session_id")
+        if session_id:
+            from graphs.utils.context_memory import get_context_manager
+            context_manager = get_context_manager(session_id)
+            
+            # 构建结果摘要（简化版，只保留必要信息，让LLM从对话历史和SQL中自己理解）
+            result_summary = {
+                "row_count": execution_result.get("row_count", 0),
+                "columns": columns
+            }
+            
+            # 添加答案到上下文记忆
+            context_manager.add_answer(
+                answer=answer,
+                sql=candidate_sql,
+                result_summary=result_summary
+            )
+            
+            # 更新state中的历史
+            updated_history = context_manager.get_all_history()
+        else:
+            updated_history = state.get("dialog_history", [])
+        
         return {
             **state,
             "answer": answer,
-            "answer_generated_at": datetime.now().isoformat()
+            "answer_generated_at": datetime.now().isoformat(),
+            "dialog_history": updated_history  # M9.75: 更新对话历史
         }
         
     except Exception as e:

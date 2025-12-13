@@ -189,13 +189,19 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
     M4: Supports regeneration with critique feedback.
     M8: Enhanced with multi-table JOIN path generation.
     M9.5: Detects chat questions and handles them separately.
+    M9.75: Now uses context memory for better SQL generation.
     """
     question = state.get("question", "")
     critique = state.get("critique")  # M4: Get critique if available
     regeneration_count = state.get("regeneration_count", 0)  # M4: Track retries
+    session_id = state.get("session_id")
 
-    print(f"\n=== Generate SQL Node (M3/M4/M8/M9.5) ===")
+    print(f"\n=== Generate SQL Node (M3/M4/M8/M9.5/M9.75) ===")
     print(f"Question: {question}")
+    
+    # M9.75: 获取上下文记忆管理器
+    from graphs.utils.context_memory import get_context_manager
+    context_manager = get_context_manager(session_id) if session_id else None
 
     # M9.5: 使用LLM判断用户意图，如果是聊天问题，直接使用通用聊天接口
     if not critique:
@@ -205,9 +211,23 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
         if is_chat:
             print("💬 检测到聊天意图，使用通用聊天接口（不使用SQL生成模板）")
             
+            # M9.75: 先添加用户问题到历史（在生成响应之前）
+            if context_manager and regeneration_count == 0:
+                context_manager.add_query(question)
+            
+            # M9.75: 格式化历史上下文用于聊天响应
+            context_text = ""
+            if context_manager:
+                context_text = context_manager.format_context_for_sql_generation(question, max_rounds=5)
+                if context_text:
+                    print("📚 已加载历史上下文用于聊天响应")
+            
             # M9.5: 加载聊天提示词，赋予NL2SQL助手身份
             chat_prompt_template = load_prompt_template("chat")
-            chat_prompt = chat_prompt_template.format(question=question)
+            chat_prompt = chat_prompt_template.format(
+                question=question,
+                context_history=context_text if context_text else ""
+            )
             
             # 使用模块级别的llm_client（已在文件顶部导入），使用NL2SQL助手身份
             chat_response = llm_client.chat(
@@ -217,6 +237,10 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
             
             print(f"Chat Response: {chat_response}")
             
+            # M9.75: 添加聊天响应到上下文记忆
+            if context_manager:
+                context_manager.add_chat_response(chat_response)
+            
             return {
                 **state,
                 "candidate_sql": None,
@@ -224,10 +248,15 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
                 "chat_response": chat_response,
                 "sql_generated_at": datetime.now().isoformat(),
                 "regeneration_count": 0,
-                "critique": None
+                "critique": None,
+                "dialog_history": context_manager.get_all_history() if context_manager else state.get("dialog_history", [])
             }
         else:
             print("📊 检测到数据查询意图，继续使用SQL生成流程")
+            
+            # M9.75: 添加查询到上下文记忆（仅在首次生成时，不是重新生成）
+            if context_manager and regeneration_count == 0:
+                context_manager.add_query(question)
 
     if critique:
         print(f"Regeneration attempt: {regeneration_count + 1}")
@@ -258,6 +287,13 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
                 for i, step in enumerate(join_steps, 1):
                     print(f"    {i}. {step['join_type']} JOIN {step['join_table']} ON {step['condition']}")
 
+    # M9.75: 格式化历史上下文
+    context_text = ""
+    if context_manager and not critique:
+        context_text = context_manager.format_context_for_sql_generation(question)
+        if context_text:
+            print("📚 已加载历史上下文用于SQL生成")
+
     # M4: If this is a regeneration, modify the prompt to include critique
     if critique:
         # Add critique section to prompt
@@ -281,12 +317,19 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
 
 {join_suggestions}
 """
+        # M9.75: 添加历史上下文到prompt
+        if context_text:
+            prompt_with_critique = f"""{prompt_with_critique}
+
+{context_text}
+"""
         prompt = prompt_with_critique.format(
             schema=real_schema,
-            question=question
+            question=question,
+            context_history=context_text if context_text else ""
         )
     else:
-        # Original prompt with M8 JOIN suggestions
+        # Original prompt with M8 JOIN suggestions and M9.75 context
         if join_suggestions:
             # Insert JOIN suggestions before the user question
             prompt_template_with_join = prompt_template.replace(
@@ -295,12 +338,14 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
             )
             prompt = prompt_template_with_join.format(
                 schema=real_schema,
-                question=question
+                question=question,
+                context_history=context_text if context_text else ""
             )
         else:
             prompt = prompt_template.format(
                 schema=real_schema,
-                question=question
+                question=question,
+                context_history=context_text if context_text else ""
             )
 
     try:
@@ -339,7 +384,8 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
             "chat_response": None,
             "sql_generated_at": datetime.now().isoformat(),
             "regeneration_count": new_regeneration_count,  # M4: Track retries
-            "critique": None  # Clear critique after using it
+            "critique": None,  # Clear critique after using it
+            "dialog_history": context_manager.get_all_history() if context_manager else state.get("dialog_history", [])
         }
 
     except Exception as e:
