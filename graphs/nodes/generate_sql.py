@@ -205,10 +205,14 @@ def generate_sql_node(state: NL2SQLState) -> NL2SQLState:
         if is_chat:
             print("💬 检测到聊天意图，使用通用聊天接口（不使用SQL生成模板）")
             
-            # 使用模块级别的llm_client（已在文件顶部导入），通用聊天接口，不使用SQL生成模板
+            # M9.5: 加载聊天提示词，赋予NL2SQL助手身份
+            chat_prompt_template = load_prompt_template("chat")
+            chat_prompt = chat_prompt_template.format(question=question)
+            
+            # 使用模块级别的llm_client（已在文件顶部导入），使用NL2SQL助手身份
             chat_response = llm_client.chat(
-                prompt=question,
-                system_message="你是一个友好的AI助手，可以帮助用户进行自然语言对话。如果用户询问关于数据库查询的问题，请引导他们使用正确的查询格式。"
+                prompt=chat_prompt,
+                system_message="你是一个NL2SQL助手，专门帮助用户通过自然语言查询数据库内容。"
             )
             
             print(f"Chat Response: {chat_response}")
